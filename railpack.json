@@ -6,7 +6,11 @@
   },
   "steps": {
     "build": {
-      "commands": ["pnpm build"],
+      "commands": [
+        "pnpm build",
+        "cp -r public .next/standalone/public",
+        "cp -r .next/static .next/standalone/.next/static"
+      ],
       "variables": {
         "NODE_OPTIONS": "--max-old-space-size=1024"
       }
@@ -18,7 +22,7 @@
     }
   },
   "deploy": {
-    "startCommand": "pnpm start",
+    "startCommand": "node .next/standalone/server.js",
     "variables": {
       "NODE_ENV": "production"
     }
