@@ -19,10 +19,12 @@ function stripLocale(pathname: string): string {
 
 export default auth((req) => {
   const { pathname } = req.nextUrl;
+  console.log(`[PROXY] Request: ${pathname}`);
 
   // ── 1. Skip i18n for API routes ──
   if (pathname.startsWith("/api")) {
     const isLoggedIn = !!req.auth;
+    console.log(`[PROXY] API Route: ${pathname}, LoggedIn: ${isLoggedIn}`);
     if (!pathname.startsWith("/api/auth") && !isLoggedIn) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -35,9 +37,11 @@ export default auth((req) => {
   // ── 3. Auth checks on the locale-stripped path ──
   const isLoggedIn = !!req.auth;
   const cleanPath = stripLocale(pathname);
+  console.log(`[PROXY] CleanPath: ${cleanPath}, LoggedIn: ${isLoggedIn}`);
 
   // Protect dashboard routes
   if (cleanPath.startsWith("/dashboard") && !isLoggedIn) {
+    console.log(`[PROXY] Redirecting to /login from ${cleanPath}`);
     return NextResponse.redirect(new URL("/login", req.url));
   }
 
@@ -46,9 +50,11 @@ export default auth((req) => {
     (cleanPath === "/" || cleanPath === "/login" || cleanPath === "/signup") &&
     isLoggedIn
   ) {
+    console.log(`[PROXY] Logged in user hitting ${cleanPath}, redirecting to /dashboard`);
     return NextResponse.redirect(new URL("/dashboard", req.url));
   }
 
+  console.log(`[PROXY] Passing to intlResponse for ${pathname}`);
   return intlResponse;
 });
 
