@@ -12,7 +12,8 @@
         "cp -r .next/static .next/standalone/.next/static"
       ],
       "variables": {
-        "NODE_OPTIONS": "--max-old-space-size=4096"
+        "NODE_OPTIONS": "--max-old-space-size=4096",
+        "NEXT_CPU_COUNT": "4"
       }
     }
   },
