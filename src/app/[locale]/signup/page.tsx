@@ -23,6 +23,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { SocialAuth } from "@/components/auth/social-auth";
 
 export default function SignupPage() {
   const t = useTranslations("auth");
@@ -146,6 +147,9 @@ export default function SignupPage() {
                 {isLoading && <Loader2 className="size-4 animate-spin" />}
                 {isLoading ? t("creatingAccount") : t("createAccount")}
               </Button>
+
+              <SocialAuth />
+
               <p className="text-sm text-muted-foreground text-center">
                 {t("hasAccount")}{" "}
                 <Link

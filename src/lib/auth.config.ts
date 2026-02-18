@@ -1,5 +1,6 @@
 import type { NextAuthConfig } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
+import Google from "next-auth/providers/google";
 
 // Separate auth config that is edge-compatible (no Prisma/Node specifics)
 export const authConfig = {
@@ -8,6 +9,11 @@ export const authConfig = {
     signIn: "/login",
   },
   providers: [
+    Google({
+      clientId: process.env.GOOGLE_CLIENT_ID,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+      allowDangerousEmailAccountLinking: true,
+    }),
     // We provide an empty list here or just dummy providers
     // The actual authorization logic for Credentials will be added in auth.ts (Node.js)
     CredentialsProvider({}),
