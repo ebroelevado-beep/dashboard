@@ -12,13 +12,19 @@
         "cp -r .next/static .next/standalone/.next/static"
       ],
       "variables": {
-        "NODE_OPTIONS": "--max-old-space-size=1024"
+        "NODE_OPTIONS": "--max-old-space-size=4096"
       }
     }
   },
   "caches": {
     "pnpm": {
       "path": "/root/.local/share/pnpm/store/v3"
+    },
+    "node_modules": {
+      "path": "node_modules"
+    },
+    "next": {
+      "path": ".next/cache"
     }
   },
   "deploy": {
