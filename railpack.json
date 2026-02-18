@@ -20,7 +20,9 @@
   "deploy": {
     "startCommand": "node .next/standalone/server.js",
     "variables": {
-      "NODE_ENV": "production"
+      "NODE_ENV": "production",
+      "HOSTNAME": "0.0.0.0",
+      "PORT": "3000"
     }
   },
   "secrets": ["DATABASE_URL", "AUTH_SECRET", "NEXTAUTH_URL"]
