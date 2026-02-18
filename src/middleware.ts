@@ -1,5 +1,6 @@
 import createIntlMiddleware from "next-intl/middleware";
-import { auth } from "@/lib/auth";
+import NextAuth from "next-auth";
+import { authConfig } from "@/lib/auth.config";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { routing } from "@/i18n/routing";
@@ -16,6 +17,8 @@ function stripLocale(pathname: string): string {
   }
   return pathname;
 }
+
+const { auth } = NextAuth(authConfig);
 
 export default auth((req) => {
   const { pathname } = req.nextUrl;
