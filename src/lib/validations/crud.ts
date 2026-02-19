@@ -137,6 +137,10 @@ export const updateSeatSchema = z.object({
   status: z.enum(["active", "paused", "cancelled"]).optional(),
   customPrice: z.number().min(0).optional(),
   durationMonths: z.number().int().positive().optional(), // only for reactivation
+  startDate: z.string().date().transform((val) => new Date(val)).optional(),
+  activeUntil: z.string().date().transform((val) => new Date(val)).optional(),
+  serviceUser: z.string().max(100).nullable().optional(),
+  servicePassword: z.string().max(100).nullable().optional(),
 });
 
 export type UpdateSeatInput = z.infer<typeof updateSeatSchema>;

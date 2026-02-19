@@ -388,6 +388,7 @@ export default function SubscriptionDetailPage({
 
       {/* Edit Seat */}
       <EditSeatDialog
+        key={editSeat?.id || "none"}
         seat={editSeat}
         open={!!editSeat}
         onOpenChange={(open) => {

@@ -219,7 +219,11 @@
     "removeSeat": "Quitar Asiento",
     "renewPlatform": "Renovar Plataforma",
     "availableSeats": "{available} de {total} asientos disponibles",
-    "unlimitedSeats": "Asientos ilimitados"
+    "unlimitedSeats": "Asientos ilimitados",
+    "editSeat": "Editar Asiento",
+    "editSeatDescription": "Actualiza los detalles de asignación de este asiento.",
+    "serviceUser": "Usuario del servicio",
+    "servicePassword": "Contraseña del servicio"
   },
   "clients": {
     "title": "Clientes",

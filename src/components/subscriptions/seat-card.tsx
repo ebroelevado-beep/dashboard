@@ -252,14 +252,14 @@ export function SeatCard({ seat, onPause, onResume, onCancel, onRenew, onEdit }:
       {hasCredentials && (
         <div className="rounded border bg-muted/30 p-2 space-y-1.5">
           {seat.client.serviceUser && (
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-muted-foreground">User</span>
-              <div className="flex items-center gap-1">
-                <code className="font-mono text-xs">{seat.client.serviceUser}</code>
+            <div className="flex items-center justify-between text-xs gap-2 overflow-hidden">
+              <span className="text-muted-foreground shrink-0">User</span>
+              <div className="flex items-center gap-1 min-w-0">
+                <code className="font-mono text-xs truncate">{seat.client.serviceUser}</code>
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="size-5"
+                  className="size-5 shrink-0"
                   onClick={() =>
                     copyToClipboard(seat.client.serviceUser!, "User")
                   }

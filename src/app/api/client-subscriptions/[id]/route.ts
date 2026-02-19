@@ -54,6 +54,20 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     const updateData: Record<string, unknown> = {};
 
     if (data.customPrice !== undefined) updateData.customPrice = data.customPrice;
+    if (data.startDate !== undefined) updateData.joinedAt = data.startDate;
+    if (data.activeUntil !== undefined) updateData.activeUntil = data.activeUntil;
+
+    // Handle credentials (update Client model)
+    if (data.serviceUser !== undefined || data.servicePassword !== undefined) {
+      const clientUpdate: Record<string, string | null> = {};
+      if (data.serviceUser !== undefined) clientUpdate.serviceUser = data.serviceUser;
+      if (data.servicePassword !== undefined) clientUpdate.servicePassword = data.servicePassword;
+      
+      await prisma.client.update({
+        where: { id: existing.clientId },
+        data: clientUpdate,
+      });
+    }
 
     if (data.status !== undefined && data.status !== existing.status) {
       updateData.status = data.status;
@@ -77,8 +91,6 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
           updateData.remainingDays = null; // clear after use
           break;
         }
-
-
       }
     }
 

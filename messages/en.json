@@ -206,7 +206,11 @@
     "removeSeat": "Remove Seat",
     "renewPlatform": "Renew Platform",
     "availableSeats": "{available} of {total} seats available",
-    "unlimitedSeats": "Unlimited seats"
+    "unlimitedSeats": "Unlimited seats",
+    "editSeat": "Edit Seat",
+    "editSeatDescription": "Update the assignment details for this seat.",
+    "serviceUser": "Service Username",
+    "servicePassword": "Service Password"
   },
   "clients": {
     "title": "Clients",

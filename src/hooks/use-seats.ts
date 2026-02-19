@@ -40,6 +40,10 @@ export function useUpdateSeat() {
       customPrice?: number;
       status?: "active" | "paused" | "cancelled";
       durationMonths?: number;
+      startDate?: string | Date;
+      activeUntil?: string | Date;
+      serviceUser?: string | null;
+      servicePassword?: string | null;
     }) => {
       const { id, ...body } = data;
       return fetchApi(`/api/client-subscriptions/${id}`, {
