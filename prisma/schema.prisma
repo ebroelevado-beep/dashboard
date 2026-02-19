@@ -146,6 +146,11 @@ model Subscription {
   clientSubscriptions ClientSubscription[]
   platformRenewals    PlatformRenewal[]
 
+  masterUsername String? @map("master_username") @db.VarChar(100)
+  masterPassword String? @map("master_password") @db.VarChar(100)
+  ownerId        String? @map("owner_id")
+  owner          Client? @relation("SubscriptionOwner", fields: [ownerId], references: [id])
+
   @@index([userId])
   @@map("subscriptions")
 }
@@ -166,6 +171,7 @@ model Client {
 
   user                User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
   clientSubscriptions ClientSubscription[]
+  ownedSubscriptions  Subscription[]       @relation("SubscriptionOwner")
 
   @@index([userId])
   @@map("clients")

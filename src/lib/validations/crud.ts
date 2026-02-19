@@ -34,6 +34,9 @@ export const createSubscriptionSchema = z.object({
   startDate: z.string().date().transform((val) => new Date(val)),
   durationMonths: z.number().int().positive(),
   status: z.enum(["active", "paused", "cancelled"]).optional().default("active"),
+  masterUsername: z.string().max(100).nullable().optional(),
+  masterPassword: z.string().max(100).nullable().optional(),
+  ownerId: z.string().uuid().nullable().optional(),
 });
 
 export type CreateSubscriptionInput = z.infer<typeof createSubscriptionSchema>;
@@ -63,6 +66,7 @@ export const createClientSubscriptionSchema = z.object({
   durationMonths: z.number().int().positive(),
   serviceUser: z.string().max(100).nullable().optional(),
   servicePassword: z.string().max(100).nullable().optional(),
+  startDate: z.string().date().transform((val) => new Date(val)).optional(),
   status: z
     .enum(["active", "paused", "cancelled"])
     .optional()

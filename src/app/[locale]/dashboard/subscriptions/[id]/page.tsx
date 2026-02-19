@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { SeatCard } from "@/components/subscriptions/seat-card";
 import { AddSeatDialog } from "@/components/subscriptions/add-seat-dialog";
+import { EditSeatDialog } from "@/components/subscriptions/edit-seat-dialog";
 import { RenewClientDialog } from "@/components/subscriptions/renew-client-dialog";
 import { RenewPlatformDialog } from "@/components/subscriptions/renew-platform-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -51,6 +52,7 @@ export default function SubscriptionDetailPage({
   const { id } = use(params);
   const { data: sub, isLoading, isError } = useSubscription(id);
   const [addSeatOpen, setAddSeatOpen] = useState(false);
+  const [editSeat, setEditSeat] = useState<typeof sub extends undefined ? never : NonNullable<typeof sub>["clientSubscriptions"][number] | null>(null);
   const [renewClientSeat, setRenewClientSeat] = useState<typeof sub extends undefined ? never : NonNullable<typeof sub>["clientSubscriptions"][number] | null>(null);
   const [renewPlatformOpen, setRenewPlatformOpen] = useState(false);
 
@@ -336,6 +338,7 @@ export default function SubscriptionDetailPage({
                   onResume={() => resumeMutation.mutate(seat.id)}
                   onCancel={() => setCancelSeatId(seat.id)}
                   onRenew={() => setRenewClientSeat(seat)}
+                  onEdit={() => setEditSeat(seat)}
                 />
               ))}
             </div>
@@ -381,6 +384,15 @@ export default function SubscriptionDetailPage({
         subscriptionId={id}
         open={addSeatOpen}
         onOpenChange={setAddSeatOpen}
+      />
+
+      {/* Edit Seat */}
+      <EditSeatDialog
+        seat={editSeat}
+        open={!!editSeat}
+        onOpenChange={(open) => {
+          if (!open) setEditSeat(null);
+        }}
       />
 
       {/* Renew Client */}

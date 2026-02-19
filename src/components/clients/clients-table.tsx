@@ -11,7 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Pencil, Trash2, Users } from "lucide-react";
+import { Pencil, Trash2, Users, Eye } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
 import { differenceInDays, startOfDay } from "date-fns";
 import { useTranslations } from "next-intl";
@@ -160,15 +160,24 @@ export function ClientsTable({ clients, isLoading }: ClientsTableProps) {
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-1">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="size-8"
-                        onClick={(e) => { e.stopPropagation(); setEditClient(c); }}
-                      >
-                        <Pencil className="size-3.5" />
-                        <span className="sr-only">{tc("edit")}</span>
-                      </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="size-8"
+                          onClick={(e) => { e.stopPropagation(); setSheetClientId(c.id); }}
+                        >
+                          <Eye className="size-3.5" />
+                          <span className="sr-only">{tc("view")}</span>
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="size-8"
+                          onClick={(e) => { e.stopPropagation(); setEditClient(c); }}
+                        >
+                          <Pencil className="size-3.5" />
+                          <span className="sr-only">{tc("edit")}</span>
+                        </Button>
                       <Button
                         variant="ghost"
                         size="icon"

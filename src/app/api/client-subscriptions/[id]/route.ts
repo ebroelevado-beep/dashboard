@@ -78,11 +78,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
           break;
         }
 
-        case "cancelled":
-          // Permanent cancellation: set leftAt, never delete renewalLogs
-          updateData.leftAt = today;
-          updateData.remainingDays = null;
-          break;
+
       }
     }
 
@@ -91,5 +87,25 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       data: updateData,
     });
     return success(seat);
+  });
+}
+
+// DELETE /api/client-subscriptions/[id] — Hard delete a seat
+export async function DELETE(request: NextRequest, { params }: RouteParams) {
+  return withErrorHandling(async () => {
+    const { getAuthUserId } = await import("@/lib/auth-utils");
+    const userId = await getAuthUserId();
+    const { id } = await params;
+
+    const existing = await prisma.clientSubscription.findFirst({
+      where: { id, subscription: { userId } },
+    });
+    if (!existing) return error("Seat not found", 404);
+
+    await prisma.clientSubscription.delete({
+      where: { id },
+    });
+
+    return success({ success: true });
   });
 }

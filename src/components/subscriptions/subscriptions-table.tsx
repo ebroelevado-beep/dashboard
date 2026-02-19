@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "@/i18n/navigation";
 import type { Subscription } from "@/hooks/use-subscriptions";
 import { SubscriptionFormDialog } from "./subscription-form-dialog";
 import { DeleteSubscriptionDialog } from "./delete-subscription-dialog";
@@ -38,6 +39,7 @@ export function SubscriptionsTable({ subscriptions, isLoading }: SubscriptionsTa
   const [deleteSub, setDeleteSub] = useState<Subscription | null>(null);
   const t = useTranslations("subscriptions");
   const tc = useTranslations("common");
+  const router = useRouter();
 
   if (isLoading) {
     return (
@@ -109,7 +111,11 @@ export function SubscriptionsTable({ subscriptions, isLoading }: SubscriptionsTa
               const isFull = max !== null && occupied >= max;
 
               return (
-                <TableRow key={sub.id}>
+                <TableRow 
+                  key={sub.id}
+                  className="cursor-pointer"
+                  onClick={() => router.push(`/dashboard/subscriptions/${sub.id}`)}
+                >
                   <TableCell className="font-medium">{sub.label}</TableCell>
                   <TableCell className="text-muted-foreground">
                     {sub.plan.platform.name} → {sub.plan.name}

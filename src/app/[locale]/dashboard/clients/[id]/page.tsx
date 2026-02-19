@@ -9,7 +9,14 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, UserCircle } from "lucide-react";
+import { ArrowLeft, UserCircle, Plus, Trash2 } from "lucide-react";
+import { AssignSubscriptionDialog } from "@/components/clients/assign-subscription-dialog";
+import { useCancelSeat } from "@/hooks/use-seats";
+import { useState } from "react";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 function formatCurrency(amount: number) {
   return new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR" }).format(amount);
@@ -24,6 +31,9 @@ const statusVariant: Record<string, "default" | "secondary" | "destructive"> = {
 export default function ClientDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { data: client, isLoading } = useClient(id);
+  const [assignOpen, setAssignOpen] = useState(false);
+  const [cancelSeatId, setCancelSeatId] = useState<string | null>(null);
+  const cancelMutation = useCancelSeat();
 
   if (isLoading) {
     return (
@@ -69,6 +79,10 @@ export default function ClientDetailPage() {
             </p>
           </div>
         </div>
+        <Button onClick={() => setAssignOpen(true)}>
+          <Plus className="mr-2 size-4" />
+          Assign Subscription
+        </Button>
       </div>
 
       {/* Summary */}
@@ -102,6 +116,7 @@ export default function ClientDetailPage() {
                 <TableHead className="text-right">Custom Price</TableHead>
                 <TableHead className="text-center">Status</TableHead>
                 <TableHead>Joined</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -130,12 +145,62 @@ export default function ClientDetailPage() {
                   <TableCell className="text-muted-foreground">
                     {new Date(cs.joinedAt).toLocaleDateString("es-ES")}
                   </TableCell>
+                  <TableCell className="text-right">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="size-8 text-destructive hover:text-destructive"
+                      onClick={() => setCancelSeatId(cs.id)}
+                    >
+                      <Trash2 className="size-3.5" />
+                      <span className="sr-only">Remove</span>
+                    </Button>
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
           </Table>
         </div>
       )}
+
+      {/* Dialogs */}
+      {client && (
+        <AssignSubscriptionDialog
+          clientId={client.id}
+          clientName={client.name}
+          previousServiceUser={client.serviceUser}
+          previousServicePassword={client.servicePassword}
+          open={assignOpen}
+          onOpenChange={setAssignOpen}
+        />
+      )}
+
+      <AlertDialog open={!!cancelSeatId} onOpenChange={(o) => { if (!o) setCancelSeatId(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove Subscription?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently remove the client from this subscription.
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                if (cancelSeatId) {
+                  cancelMutation.mutate(cancelSeatId, {
+                    onSuccess: () => setCancelSeatId(null),
+                  });
+                }
+              }}
+            >
+              {cancelMutation.isPending ? "Removing…" : "Remove"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

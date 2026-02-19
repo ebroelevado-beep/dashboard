@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { useClients } from "@/hooks/use-clients";
+import { useSubscriptions } from "@/hooks/use-subscriptions";
 import { useCreateSeat } from "@/hooks/use-seats";
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
@@ -9,42 +9,52 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Search, UserPlus, Eye, EyeOff } from "lucide-react";
+import { Search, Plus, Eye, EyeOff } from "lucide-react";
 import { addMonths, format } from "date-fns";
 
-interface AddSeatDialogProps {
-  subscriptionId: string;
+interface AssignSubscriptionDialogProps {
+  clientId: string;
+  clientName: string;
+  previousServiceUser?: string | null;
+  previousServicePassword?: string | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
-export function AddSeatDialog({ subscriptionId, open, onOpenChange }: AddSeatDialogProps) {
+export function AssignSubscriptionDialog({ 
+  clientId, 
+  clientName,
+  previousServiceUser,
+  previousServicePassword,
+  open, 
+  onOpenChange 
+}: AssignSubscriptionDialogProps) {
   const createSeat = useCreateSeat();
-  const { data: clients } = useClients();
+  const { data: subscriptions } = useSubscriptions();
 
   // Form state
   const [search, setSearch] = useState("");
-  const [selectedClientId, setSelectedClientId] = useState("");
+  const [selectedSubId, setSelectedSubId] = useState("");
   const [customPrice, setCustomPrice] = useState("");
   const [durationMonths, setDurationMonths] = useState("1");
   const [startDate, setStartDate] = useState(format(new Date(), "yyyy-MM-dd"));
-  const [serviceUser, setServiceUser] = useState("");
-  const [servicePassword, setServicePassword] = useState("");
+  const [serviceUser, setServiceUser] = useState(previousServiceUser || "");
+  const [servicePassword, setServicePassword] = useState(previousServicePassword || "");
   const [showPassword, setShowPassword] = useState(false);
 
   // Search filter
-  const filteredClients = useMemo(() => {
-    if (!clients) return [];
-    if (!search.trim()) return clients;
+  const filteredSubs = useMemo(() => {
+    if (!subscriptions) return [];
+    if (!search.trim()) return subscriptions;
     const q = search.toLowerCase();
-    return clients.filter(
-      (c) =>
-        c.name.toLowerCase().includes(q) ||
-        (c.phone && c.phone.toLowerCase().includes(q))
+    return subscriptions.filter(
+      (s) =>
+        s.label.toLowerCase().includes(q) ||
+        s.plan.platform.name.toLowerCase().includes(q)
     );
-  }, [clients, search]);
+  }, [subscriptions, search]);
 
-  const selectedClient = clients?.find((c) => c.id === selectedClientId);
+  const selectedSub = subscriptions?.find((s) => s.id === selectedSubId);
 
   // Date preview
   const months = parseInt(durationMonths) || 0;
@@ -54,22 +64,22 @@ export function AddSeatDialog({ subscriptionId, open, onOpenChange }: AddSeatDia
 
   const resetForm = () => {
     setSearch("");
-    setSelectedClientId("");
+    setSelectedSubId("");
     setCustomPrice("");
     setDurationMonths("1");
     setStartDate(format(new Date(), "yyyy-MM-dd"));
-    setServiceUser("");
-    setServicePassword("");
+    setServiceUser(previousServiceUser || "");
+    setServicePassword(previousServicePassword || "");
     setShowPassword(false);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedClientId || !customPrice || months < 1) return;
+    if (!selectedSubId || !customPrice || months < 1) return;
 
     await createSeat.mutateAsync({
-      clientId: selectedClientId,
-      subscriptionId,
+      clientId,
+      subscriptionId: selectedSubId,
       customPrice: parseFloat(customPrice),
       durationMonths: months,
       startDate: startDate,
@@ -90,73 +100,83 @@ export function AddSeatDialog({ subscriptionId, open, onOpenChange }: AddSeatDia
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <UserPlus className="size-5" />
-            Assign Client
+            <Plus className="size-5" />
+            Assign Subscription
           </DialogTitle>
           <DialogDescription>
-            Search for a client and assign them to an available seat.
+            Assign <strong>{clientName}</strong> to a subscription.
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Client Search */}
+          {/* Subscription Search */}
           <div className="space-y-2">
-            <Label>Client</Label>
+            <Label>Subscription</Label>
             <div className="relative">
               <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
               <Input
-                placeholder="Search by name or phone…"
+                placeholder="Search plan or platform…"
                 value={search}
                 onChange={(e) => {
                   setSearch(e.target.value);
-                  setSelectedClientId("");
+                  setSelectedSubId("");
                 }}
                 className="pl-9"
               />
             </div>
 
-            {/* Client list */}
-            {!selectedClientId && (
-              <div className="max-h-36 overflow-y-auto rounded-md border">
-                {filteredClients.length === 0 ? (
-                  <p className="px-3 py-2 text-sm text-muted-foreground">
-                    {search ? "No clients found" : "Type to search…"}
+            {/* Subscription list */}
+            {!selectedSubId && (
+              <div className="max-h-36 overflow-y-auto rounded-md border text-sm">
+                {filteredSubs.length === 0 ? (
+                  <p className="px-3 py-2 text-muted-foreground">
+                    {search ? "No subscriptions found" : "Type to search…"}
                   </p>
                 ) : (
-                  filteredClients.map((c) => (
-                    <button
-                      key={c.id}
-                      type="button"
-                      className="flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-accent transition-colors"
-                      onClick={() => {
-                        setSelectedClientId(c.id);
-                        setSearch(c.name);
-                      }}
-                    >
-                      <span className="font-medium">{c.name}</span>
-                      {c.phone && (
-                        <span className="text-xs text-muted-foreground">{c.phone}</span>
-                      )}
-                    </button>
-                  ))
+                  filteredSubs.map((s) => {
+                     const occupied = s.clientSubscriptions?.length || 0;
+                     const max = s.plan.maxSeats;
+                     const isFull = max !== null && occupied >= max;
+                     return (
+                      <button
+                        key={s.id}
+                        type="button"
+                        disabled={isFull}
+                        className={`flex w-full items-center justify-between px-3 py-2 text-left hover:bg-accent transition-colors ${isFull ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        onClick={() => {
+                          setSelectedSubId(s.id);
+                          setSearch(`${s.label} (${s.plan.platform.name})`);
+                          // Auto-fill price if empty
+                          if (!customPrice) setCustomPrice(s.plan.cost.toString());
+                        }}
+                      >
+                        <div>
+                          <p className="font-medium">{s.label}</p>
+                          <p className="text-xs text-muted-foreground">{s.plan.platform.name} · {s.plan.name}</p>
+                        </div>
+                        <div className="text-xs text-right">
+                          <p>{occupied} / {max ?? "∞"}</p>
+                          {isFull && <p className="text-destructive font-medium">FULL</p>}
+                        </div>
+                      </button>
+                    );
+                  })
                 )}
               </div>
             )}
 
-            {/* Selected client badge */}
-            {selectedClient && (
+            {/* Selected sub badge */}
+            {selectedSub && (
               <div className="flex items-center gap-2 rounded-md bg-accent/50 px-3 py-1.5 text-sm">
-                <span className="font-medium">{selectedClient.name}</span>
-                {selectedClient.phone && (
-                  <span className="text-xs text-muted-foreground">({selectedClient.phone})</span>
-                )}
+                <span className="font-medium">{selectedSub.label}</span>
+                <span className="text-xs text-muted-foreground">({selectedSub.plan.platform.name})</span>
                 <Button
                   type="button"
                   variant="ghost"
                   size="sm"
                   className="ml-auto h-6 px-2 text-xs"
                   onClick={() => {
-                    setSelectedClientId("");
+                    setSelectedSubId("");
                     setSearch("");
                   }}
                 >
@@ -169,9 +189,9 @@ export function AddSeatDialog({ subscriptionId, open, onOpenChange }: AddSeatDia
           {/* Price + Duration */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="seat-price">Price (€/month)</Label>
+              <Label htmlFor="sub-price">Price (€/month)</Label>
               <Input
-                id="seat-price"
+                id="sub-price"
                 type="number"
                 step="0.01"
                 min="0"
@@ -182,9 +202,9 @@ export function AddSeatDialog({ subscriptionId, open, onOpenChange }: AddSeatDia
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="seat-duration">Duration (months)</Label>
+              <Label htmlFor="sub-duration">Duration (months)</Label>
               <Input
-                id="seat-duration"
+                id="sub-duration"
                 type="number"
                 min="1"
                 value={durationMonths}
@@ -195,9 +215,9 @@ export function AddSeatDialog({ subscriptionId, open, onOpenChange }: AddSeatDia
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="seat-start-date">Start Date</Label>
+            <Label htmlFor="sub-start-date">Start Date</Label>
             <Input
-              id="seat-start-date"
+              id="sub-start-date"
               type="date"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
@@ -206,9 +226,9 @@ export function AddSeatDialog({ subscriptionId, open, onOpenChange }: AddSeatDia
           </div>
 
           {previewDate && (
-            <p className="text-xs text-muted-foreground">
-              Active until: <span className="font-medium text-foreground">{previewDate}</span>
-            </p>
+             <p className="text-xs text-muted-foreground">
+               Active until: <span className="font-medium text-foreground">{previewDate}</span>
+             </p>
           )}
 
           {/* Service Credentials */}
@@ -217,19 +237,19 @@ export function AddSeatDialog({ subscriptionId, open, onOpenChange }: AddSeatDia
               Service Credentials (optional)
             </legend>
             <div className="space-y-2">
-              <Label htmlFor="seat-user">Username / Email</Label>
+              <Label htmlFor="sub-user">Username / Email</Label>
               <Input
-                id="seat-user"
+                id="sub-user"
                 placeholder="e.g. john@example.com"
                 value={serviceUser}
                 onChange={(e) => setServiceUser(e.target.value)}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="seat-pass">Password</Label>
+              <Label htmlFor="sub-pass">Password</Label>
               <div className="relative">
                 <Input
-                  id="seat-pass"
+                  id="sub-pass"
                   type={showPassword ? "text" : "password"}
                   placeholder="••••••••"
                   value={servicePassword}
@@ -256,9 +276,9 @@ export function AddSeatDialog({ subscriptionId, open, onOpenChange }: AddSeatDia
             </Button>
             <Button
               type="submit"
-              disabled={createSeat.isPending || !selectedClientId || !customPrice}
+              disabled={createSeat.isPending || !selectedSubId || !customPrice}
             >
-              {createSeat.isPending ? "Assigning…" : "Assign Seat"}
+              {createSeat.isPending ? "Assigning…" : "Assign Subscription"}
             </Button>
           </DialogFooter>
         </form>

@@ -21,6 +21,9 @@ export interface Subscription {
     platform: { id: string; name: string };
   };
   clientSubscriptions: { id: string; customPrice: number; status: string }[];
+  masterUsername?: string | null;
+  masterPassword?: string | null;
+  ownerId?: string | null;
 }
 
 export interface SubscriptionDetail extends Omit<Subscription, "clientSubscriptions"> {
@@ -72,6 +75,9 @@ export function useCreateSubscription() {
       startDate: string;
       durationMonths: number;
       status?: string;
+      masterUsername?: string | null;
+      masterPassword?: string | null;
+      ownerId?: string | null;
     }) =>
       fetchApi<Subscription>("/api/subscriptions", {
         method: "POST",
@@ -96,6 +102,9 @@ export function useUpdateSubscription() {
       status?: string;
       startDate?: string;
       durationMonths?: number;
+      masterUsername?: string | null;
+      masterPassword?: string | null;
+      ownerId?: string | null;
     }) =>
       fetchApi<Subscription>(`/api/subscriptions/${data.id}`, {
         method: "PATCH",

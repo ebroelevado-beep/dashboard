@@ -96,8 +96,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Compute dates from duration
-    const today = startOfDay(new Date());
-    const activeUntil = addMonths(today, data.durationMonths);
+    const startDate = data.startDate ? startOfDay(data.startDate) : startOfDay(new Date());
+    const activeUntil = addMonths(startDate, data.durationMonths);
 
     // If credentials are provided, update the client record
     if (data.serviceUser || data.servicePassword) {
@@ -116,7 +116,7 @@ export async function POST(request: NextRequest) {
         subscriptionId: data.subscriptionId,
         customPrice: data.customPrice,
         activeUntil,
-        joinedAt: today,
+        joinedAt: startDate,
         status: data.status,
       },
     });

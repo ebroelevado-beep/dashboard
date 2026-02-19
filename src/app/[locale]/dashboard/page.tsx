@@ -339,6 +339,9 @@ export default function DashboardPage() {
             <Link href="/dashboard/subscriptions">{t("viewSubscriptions")}</Link>
           </Button>
           <Button asChild variant="outline" size="sm">
+            <Link href="/dashboard/plans">{t("viewPlans")}</Link>
+          </Button>
+          <Button asChild variant="outline" size="sm">
             <Link href="/dashboard/clients">{t("viewClients")}</Link>
           </Button>
         </CardContent>

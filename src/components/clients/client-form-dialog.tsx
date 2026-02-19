@@ -16,8 +16,6 @@ const schema = z.object({
   name: z.string().min(1, "Name is required").max(150),
   phone: z.string().max(30).optional().or(z.literal("")),
   notes: z.string().optional().or(z.literal("")),
-  serviceUser: z.string().max(100).optional().or(z.literal("")),
-  servicePassword: z.string().max(100).optional().or(z.literal("")),
 });
 
 type FormValues = {
@@ -45,7 +43,7 @@ export function ClientFormDialog({ mode, client, open, onOpenChange }: ClientFor
   } = useForm<FormValues>({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     resolver: zodResolver(schema) as any,
-    defaultValues: { name: "", phone: "", notes: "", serviceUser: "", servicePassword: "" },
+    defaultValues: { name: "", phone: "", notes: "" },
   });
 
   useEffect(() => {
@@ -55,11 +53,9 @@ export function ClientFormDialog({ mode, client, open, onOpenChange }: ClientFor
           name: client.name,
           phone: client.phone ?? "",
           notes: client.notes ?? "",
-          serviceUser: client.serviceUser ?? "",
-          servicePassword: client.servicePassword ?? "",
         });
       } else {
-        reset({ name: "", phone: "", notes: "", serviceUser: "", servicePassword: "" });
+        reset({ name: "", phone: "", notes: "" });
       }
     }
   }, [open, mode, client, reset]);
@@ -69,8 +65,6 @@ export function ClientFormDialog({ mode, client, open, onOpenChange }: ClientFor
       name: values.name,
       phone: values.phone || null,
       notes: values.notes || null,
-      serviceUser: values.serviceUser || null,
-      servicePassword: values.servicePassword || null,
     };
     if (mode === "edit" && client) {
       await updateMutation.mutateAsync({ id: client.id, ...payload });
@@ -102,16 +96,7 @@ export function ClientFormDialog({ mode, client, open, onOpenChange }: ClientFor
             <Input id="client-phone" placeholder="+34 600 000 000" {...register("phone")} />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-2">
-              <Label htmlFor="client-service-user">Service User</Label>
-              <Input id="client-service-user" placeholder="user@email.com" {...register("serviceUser")} />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="client-service-pass">Service Password</Label>
-              <Input id="client-service-pass" type="password" placeholder="••••••" {...register("servicePassword")} />
-            </div>
-          </div>
+
 
           <div className="space-y-2">
             <Label htmlFor="client-notes">Notes</Label>

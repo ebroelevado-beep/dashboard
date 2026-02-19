@@ -58,6 +58,9 @@ export async function POST(request: NextRequest) {
         startDate: data.startDate,
         activeUntil,
         status: data.status,
+        masterUsername: data.masterUsername,
+        masterPassword: data.masterPassword,
+        ownerId: data.ownerId,
       },
     });
     return success(subscription, 201);

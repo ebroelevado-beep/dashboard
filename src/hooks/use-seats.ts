@@ -13,6 +13,7 @@ export function useCreateSeat() {
       subscriptionId: string;
       customPrice: number;
       durationMonths: number;
+      startDate?: string | Date;
       serviceUser?: string | null;
       servicePassword?: string | null;
     }) =>
@@ -99,15 +100,13 @@ export function useCancelSeat() {
   return useMutation({
     mutationFn: (seatId: string) =>
       fetchApi(`/api/client-subscriptions/${seatId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: "cancelled" }),
+        method: "DELETE",
       }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.allSubscriptions });
       qc.invalidateQueries({ queryKey: queryKeys.clients });
       qc.invalidateQueries({ queryKey: queryKeys.dashboardStats });
-      toast.success("Seat cancelled");
+      toast.success("Seat removed (hard delete)");
     },
     onError: (err: Error) => toast.error(err.message),
   });

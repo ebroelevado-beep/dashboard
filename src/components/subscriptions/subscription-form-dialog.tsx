@@ -9,6 +9,7 @@ import {
 } from "@/hooks/use-subscriptions";
 import { usePlans } from "@/hooks/use-plans";
 import { usePlatforms } from "@/hooks/use-platforms";
+import { useClients } from "@/hooks/use-clients";
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
@@ -29,6 +30,9 @@ const schema = z.object({
   startDate: z.string().min(1, "validation.startDateRequired"),
   durationMonths: z.coerce.number().int().positive("validation.atLeast1Month"),
   status: z.enum(["active", "paused", "cancelled"]),
+  masterUsername: z.string().optional(),
+  masterPassword: z.string().optional(),
+  ownerId: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -44,6 +48,7 @@ export function SubscriptionFormDialog({ mode, subscription, open, onOpenChange 
   const createMutation = useCreateSubscription();
   const updateMutation = useUpdateSubscription();
   const { data: platforms } = usePlatforms();
+  const { data: clients } = useClients();
   const isPending = createMutation.isPending || updateMutation.isPending;
   const t = useTranslations("subscriptions");
   const tc = useTranslations("common");
@@ -56,9 +61,10 @@ export function SubscriptionFormDialog({ mode, subscription, open, onOpenChange 
   } = useForm<FormValues>({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     resolver: zodResolver(schema) as any,
-    defaultValues: {
+      defaultValues: {
       platformId: "", planId: "", label: "", startDate: today,
       durationMonths: 1, status: "active",
+      masterUsername: "", masterPassword: "", ownerId: "",
     },
   });
 
@@ -105,18 +111,22 @@ export function SubscriptionFormDialog({ mode, subscription, open, onOpenChange 
         const platform = platforms?.find(p =>
           p.plans.some(pl => pl.id === subscription.planId)
         );
-        reset({
+          reset({
           platformId: platform?.id ?? "",
           planId: subscription.planId,
           label: subscription.label,
           startDate: subscription.startDate.split("T")[0],
           durationMonths: 1,
           status: subscription.status,
+          masterUsername: subscription.masterUsername || "",
+          masterPassword: subscription.masterPassword || "",
+          ownerId: subscription.ownerId || "",
         });
       } else {
         reset({
           platformId: "", planId: "", label: "", startDate: today,
           durationMonths: 1, status: "active",
+          masterUsername: "", masterPassword: "", ownerId: "",
         });
       }
     }
@@ -131,6 +141,9 @@ export function SubscriptionFormDialog({ mode, subscription, open, onOpenChange 
         startDate: values.startDate,
         durationMonths: values.durationMonths,
         status: values.status,
+        masterUsername: values.masterUsername || null,
+        masterPassword: values.masterPassword || null,
+        ownerId: values.ownerId || null,
       });
     } else {
       await createMutation.mutateAsync({
@@ -139,6 +152,9 @@ export function SubscriptionFormDialog({ mode, subscription, open, onOpenChange 
         startDate: values.startDate,
         durationMonths: values.durationMonths,
         status: values.status,
+        masterUsername: values.masterUsername || null,
+        masterPassword: values.masterPassword || null,
+        ownerId: values.ownerId || null,
       });
     }
     onOpenChange(false);
@@ -262,6 +278,43 @@ export function SubscriptionFormDialog({ mode, subscription, open, onOpenChange 
               />
               {errors.durationMonths && <p className="text-sm text-destructive">{getErrorMessage(errors.durationMonths.message)}</p>}
             </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+             <div className="space-y-2">
+              <Label>Master Username</Label>
+              <Input {...register("masterUsername")} placeholder="Optional" />
+            </div>
+            <div className="space-y-2">
+              <Label>Master Password</Label>
+              <Input {...register("masterPassword")} placeholder="Optional" />
+            </div>
+          </div>
+          
+          <div className="space-y-2">
+              <Label>Owner (Client)</Label>
+               <Controller
+                control={control}
+                name="ownerId"
+                render={({ field }) => (
+                  <Select
+                    value={field.value || ""}
+                    onValueChange={(val) => field.onChange(val === "none" ? "" : val)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="No owner" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">None</SelectItem>
+                      {clients?.map((c) => (
+                        <SelectItem key={c.id} value={c.id}>
+                          {c.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
           </div>
 
           {/* Date preview */}

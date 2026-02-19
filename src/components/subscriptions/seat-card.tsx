@@ -6,7 +6,7 @@ import {
   Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
 } from "@/components/ui/tooltip";
 import Link from "next/link";
-import { UserCircle, Pause, Play, X, RefreshCw, Copy, Eye, EyeOff } from "lucide-react";
+import { UserCircle, Pause, Play, X, RefreshCw, Copy, Eye, EyeOff, Pencil } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { differenceInDays, startOfDay } from "date-fns";
@@ -92,9 +92,10 @@ interface SeatCardProps {
   onResume: () => void;
   onCancel: () => void;
   onRenew: () => void;
+  onEdit: () => void;
 }
 
-export function SeatCard({ seat, onPause, onResume, onCancel, onRenew }: SeatCardProps) {
+export function SeatCard({ seat, onPause, onResume, onCancel, onRenew, onEdit }: SeatCardProps) {
   const [showPassword, setShowPassword] = useState(false);
   const expiry = getExpiryStatus(seat.activeUntil);
   const hasCredentials = seat.client.serviceUser || seat.client.servicePassword;
@@ -142,6 +143,24 @@ export function SeatCard({ seat, onPause, onResume, onCancel, onRenew }: SeatCar
           </Badge>
           {!isCancelled && (
             <>
+              {/* Edit */}
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="size-7"
+                      onClick={onEdit}
+                    >
+                      <Pencil className="size-3.5" />
+                      <span className="sr-only">Edit</span>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Edit seat</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+
               {/* Pause / Resume toggle */}
               <TooltipProvider>
                 <Tooltip>
