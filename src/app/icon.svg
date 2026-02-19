@@ -1,10 +1,28 @@
 <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <rect width="48" height="48" rx="12" fill="#18181b"/>
-  <g fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round">
-    <line x1="16" y1="12" x2="16" y2="36"/>
-    <path d="M16 12 H28 C33 12 33 22 28 22 H16"/>
-    <line x1="20" y1="28" x2="34" y2="28" opacity="0.5"/>
-    <line x1="20" y1="32" x2="30" y2="32" opacity="0.35"/>
-    <line x1="20" y1="36" x2="26" y2="36" opacity="0.2"/>
+  <defs>
+    <linearGradient id="metallic-aluminum" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF" />
+      <stop offset="50%" stop-color="#E5E7EB" />
+      <stop offset="100%" stop-color="#D1D5DB" />
+    </linearGradient>
+    <linearGradient id="metallic-obsidian" x1="16" y1="12" x2="16" y2="36" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#3F3F46" />
+      <stop offset="50%" stop-color="#18181B" />
+      <stop offset="100%" stop-color="#09090B" />
+    </linearGradient>
+  </defs>
+  <style>
+    :root { --bg: #18181b; --stroke: #ffffff; }
+    @media (prefers-color-scheme: dark) {
+      :root { --bg: url(#metallic-aluminum); --stroke: url(#metallic-obsidian); }
+    }
+  </style>
+  <rect id="logo-rect" width="48" height="48" rx="12" fill="var(--bg)"/>
+  <g fill="none" stroke="var(--stroke)" stroke-width="2.5" stroke-linecap="round">
+    <line x1="16" y1="12" x2="16" y2="36" stroke="var(--stroke)"/>
+    <path d="M16 12 H28 C33 12 33 22 28 22 H16" stroke="var(--stroke)"/>
+    <line x1="20" y1="28" x2="34" y2="28" opacity="0.6" stroke="var(--stroke)"/>
+    <line x1="20" y1="32" x2="30" y2="32" opacity="0.4" stroke="var(--stroke)"/>
+    <line x1="20" y1="36" x2="26" y2="36" opacity="0.25" stroke="var(--stroke)"/>
   </g>
 </svg>

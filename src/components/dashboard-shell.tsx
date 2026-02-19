@@ -98,14 +98,17 @@ function NavLinks({
             onMouseEnter={() => prefetch(item.href)}
             className={cn(
               "relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200",
-              collapsed && "justify-center px-2",
+              collapsed && "justify-center px-0 gap-0",
               isActive
                 ? "bg-primary/10 text-primary dark:bg-primary/15"
                 : "text-sidebar-foreground hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground"
             )}
           >
             {isActive && (
-              <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-r-full bg-primary" />
+              <span className={cn(
+                "absolute left-0 top-1/2 -translate-y-1/2 w-[3.5px] h-5 rounded-r-full bg-primary",
+                collapsed && "-left-[8px]" // Align with sidebar edge (container has px-2)
+              )} />
             )}
             <item.icon
               className={cn(
@@ -166,7 +169,7 @@ function MobileNavLinks({ onNavigate }: { onNavigate?: () => void }) {
             )}
           >
             {isActive && (
-              <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-r-full bg-primary" />
+              <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3.5px] h-5 rounded-r-full bg-primary" />
             )}
             <item.icon
               className={cn(
@@ -203,8 +206,8 @@ function UserMenu({ collapsed }: { collapsed: boolean }) {
         <Button
           variant="ghost"
           className={cn(
-            "w-full justify-start gap-3 px-3 py-2.5 h-auto",
-            collapsed && "justify-center px-2"
+            "w-full justify-start gap-3 px-3 py-2.5 h-auto transition-all",
+            collapsed && "justify-center px-0 gap-0"
           )}
         >
           <Avatar className="size-8 shrink-0">
@@ -316,25 +319,31 @@ function MobileUserMenu() {
 
 // ── Theme Toggle ──
 function ThemeToggle() {
-  const [isDark, setIsDark] = useState(() => {
-    if (typeof window === "undefined") return false;
-    const stored = localStorage.getItem("theme");
-    const prefersDark = window.matchMedia(
-      "(prefers-color-scheme: dark)"
-    ).matches;
-    return stored === "dark" || (!stored && prefersDark);
-  });
+  const [mounted, setMounted] = useState(false);
+  const [isDark, setIsDark] = useState(false);
 
-  // Keep the DOM class in sync on mount
+  // Initialize theme on mount
   useEffect(() => {
-    document.documentElement.classList.toggle("dark", isDark);
-  }, [isDark]);
+    setMounted(true);
+    const stored = localStorage.getItem("theme");
+    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+    const initialDark = stored === "dark" || (!stored && prefersDark);
+    setIsDark(initialDark);
+    document.documentElement.classList.toggle("dark", initialDark);
+  }, []);
 
-  const toggle = () => {
-    const next = !isDark;
-    setIsDark(next);
-    localStorage.setItem("theme", next ? "dark" : "light");
-  };
+  // Sync theme when isDark changes
+  useEffect(() => {
+    if (!mounted) return;
+    document.documentElement.classList.toggle("dark", isDark);
+    localStorage.setItem("theme", isDark ? "dark" : "light");
+  }, [isDark, mounted]);
+
+  const toggle = () => setIsDark(!isDark);
+
+  if (!mounted) {
+    return <div className="size-8" />; // Placeholder to avoid layout shift
+  }
 
   return (
     <Button
@@ -342,7 +351,7 @@ function ThemeToggle() {
       size="icon"
       onClick={toggle}
       className="size-8"
-      aria-label="Toggle theme" // Could translate if vital, but sr-only English is usually fine for "Toggle theme"
+      aria-label="Toggle theme"
     >
       {isDark ? <Sun className="size-4" /> : <Moon className="size-4" />}
     </Button>
@@ -389,8 +398,8 @@ export function DashboardShell({
         {/* Logo — h-14 matches the topbar height so borders align */}
         <div
           className={cn(
-            "flex h-14 items-center gap-2.5 px-5",
-            collapsed && "justify-center px-0"
+            "flex h-14 items-center gap-2.5 px-5 transition-all duration-200",
+            collapsed && "justify-center px-0 gap-0"
           )}
         >
           <Logo size={28} className="text-primary shrink-0" />
@@ -407,7 +416,7 @@ export function DashboardShell({
         <Separator />
 
         {/* Nav */}
-        <div className="flex-1 overflow-y-auto px-3 py-4">
+        <div className={cn("flex-1 overflow-y-auto px-3 py-4 transition-all duration-200", collapsed && "px-2")}>
           <NavLinks collapsed={collapsed} />
         </div>
 
@@ -417,7 +426,7 @@ export function DashboardShell({
         <div
           className={cn(
             "flex items-center gap-1 p-3",
-            collapsed && "flex-col"
+            collapsed && "flex-col px-2"
           )}
         >
           <Tooltip>
