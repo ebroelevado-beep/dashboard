@@ -148,7 +148,7 @@ export default function SubscriptionDetailPage({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
@@ -179,8 +179,8 @@ export default function SubscriptionDetailPage({
         </div>
       </div>
 
-      {/* Key Metrics — 5 columns */}
-      <div className="grid gap-4 md:grid-cols-5">
+      {/* Key Metrics — responsive grid */}
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-5">
         {/* Actual Revenue */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -290,9 +290,9 @@ export default function SubscriptionDetailPage({
 
       {/* Seat Map */}
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>{t("seatMap")}</CardTitle>
-          <div className="flex items-center gap-2">
+        <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between p-4 sm:p-6">
+          <CardTitle className="text-base">{t("seatMap")}</CardTitle>
+          <div className="flex flex-wrap items-center gap-2">
             {/* Bulk actions */}
             {activeSeats.length > 0 && (
               <Button
@@ -322,14 +322,14 @@ export default function SubscriptionDetailPage({
             </Button>
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
           {sub.clientSubscriptions.length === 0 ? (
-            <div className="py-8 text-center">
+            <div className="py-6 text-center">
               <Users className="mx-auto mb-3 size-10 text-muted-foreground/50" />
               <p className="text-muted-foreground">{t("noActiveSeats")}</p>
             </div>
           ) : (
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
               {sub.clientSubscriptions.map((seat) => (
                 <SeatCard
                   key={seat.id}
