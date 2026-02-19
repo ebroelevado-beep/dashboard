@@ -1,66 +1,63 @@
 import NextAuth from "next-auth";
 import { PrismaAdapter } from "@auth/prisma-adapter";
-import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
+import CredentialsProvider from "next-auth/providers/credentials";
+
 import { prisma } from "@/lib/prisma";
-import { authConfig } from "./auth.config";
+import { authConfig } from "@/lib/auth.config";
+import { loginSchema } from "@/lib/validations/auth";
 
-export const { handlers, auth, signIn, signOut } = NextAuth({
+export const { 
+  handlers: { GET, POST }, 
+  auth, 
+  signIn, 
+  signOut,
+  update
+} = NextAuth({
   ...authConfig,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  adapter: PrismaAdapter(prisma as any),
+  adapter: PrismaAdapter(prisma),
+  session: { strategy: "jwt" },
   providers: [
-    ...authConfig.providers.filter((p) => p.id !== "credentials"),
+    ...authConfig.providers,
     CredentialsProvider({
-      name: "credentials",
-      credentials: {
-        email: { label: "Email", type: "email" },
-        password: { label: "Password", type: "password" },
-      },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) return null;
+        const validatedFields = loginSchema.safeParse(credentials);
 
-        const user = await prisma.user.findUnique({
-          where: { email: credentials.email as string },
-        });
+        if (validatedFields.success) {
+          const { email, password } = validatedFields.data;
+          
+          const user = await prisma.user.findUnique({
+            where: { email },
+          });
 
-        if (!user || !user.password) return null;
+          if (!user || !user.password) return null;
 
-        const passwordMatch = await bcrypt.compare(
-          credentials.password as string,
-          user.password
-        );
+          const passwordsMatch = await bcrypt.compare(password, user.password);
 
-        if (!passwordMatch) return null;
+          if (passwordsMatch) return user;
+        }
 
-        return {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          image: user.image,
-        };
+        return null;
       },
     }),
   ],
   callbacks: {
     ...authConfig.callbacks,
-    async jwt({ token, user, trigger }) {
+    async jwt({ token, user, profile, trigger, session }) {
       if (user) {
         token.id = user.id;
         token.image = user.image;
       }
-      // Refresh image from DB when session is updated (e.g. after profile save)
-      // This part is Node-only because of Prisma
-      if (trigger === "update" && token.id) {
-        const dbUser = await prisma.user.findUnique({
-          where: { id: token.id as string },
-          select: { name: true, image: true },
-        });
-        if (dbUser) {
-          token.name = dbUser.name;
-          token.image = dbUser.image;
-        }
+      
+      // If sign-in via Google, ensure the image is synced if not set
+      if (profile && !token.image) {
+        token.image = profile.picture || profile.image;
       }
+
+      if (trigger === "update" && session) {
+        return { ...token, ...session };
+      }
+
       return token;
     },
   },
