@@ -36,6 +36,11 @@ import {
   useImportData,
   useDeleteAccount,
 } from "@/hooks/use-account";
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "@/components/ui/avatar";
 import { useTranslations } from "next-intl";
 
 // ── Profile Tab ──
@@ -77,15 +82,42 @@ function ProfileTab() {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        <div className="space-y-2">
-          <Label htmlFor="name">{t("displayName")}</Label>
-          <Input
-            id="name"
-            placeholder={t("displayName")}
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            maxLength={100}
-          />
+        <div className="flex flex-col sm:flex-row items-center gap-6 pb-4 border-b">
+          <Avatar className="size-24 border-2 border-muted">
+            <AvatarImage src={image || ""} alt={name} />
+            <AvatarFallback className="text-2xl">
+              {name.slice(0, 2).toUpperCase() || <User className="size-10" />}
+            </AvatarFallback>
+          </Avatar>
+          <div className="flex-1 space-y-2 text-center sm:text-left">
+            <h3 className="text-lg font-medium">{t("profileImage")}</h3>
+            <p className="text-sm text-muted-foreground">
+              {t("profileImageDescription")}
+            </p>
+          </div>
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="space-y-2">
+            <Label htmlFor="name">{t("displayName")}</Label>
+            <Input
+              id="name"
+              placeholder={t("displayName")}
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              maxLength={100}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="image">{t("profileImage")}</Label>
+            <Input
+              id="image"
+              placeholder="https://example.com/avatar.jpg"
+              value={image || ""}
+              onChange={(e) => setImage(e.target.value)}
+            />
+          </div>
         </div>
 
         <div className="space-y-2">
@@ -230,8 +262,6 @@ function DangerZone() {
   const t = useTranslations("settings");
   const tc = useTranslations("common");
 
-  const confirmed = confirmText === "DELETE";
-
   return (
     <Card className="border-destructive/50">
       <CardHeader>
@@ -271,19 +301,31 @@ function DangerZone() {
                 </AlertDialogDescription>
               </AlertDialogHeader>
 
-              <Input
-                placeholder={t("deleteConfirmPlaceholder")}
-                value={confirmText}
-                onChange={(e) => setConfirmText(e.target.value.toUpperCase())}
-                className="font-mono"
-              />
+          <div className="space-y-2">
+            <p className="text-sm text-muted-foreground">
+              {t.rich("typeDeleteToConfirm", {
+                confirmWord: t("deleteConfirmPlaceholder"),
+                word: (word) => (
+                  <span className="font-bold text-destructive underline decoration-2 underline-offset-2">
+                    {word}
+                  </span>
+                ),
+              })}
+            </p>
+            <Input
+              placeholder={t("deleteConfirmPlaceholder")}
+              value={confirmText}
+              onChange={(e) => setConfirmText(e.target.value.toUpperCase())}
+              className="font-mono"
+            />
+          </div>
 
-              <AlertDialogFooter>
-                <AlertDialogCancel onClick={() => setConfirmText("")}>
-                  {tc("cancel")}
-                </AlertDialogCancel>
-                <AlertDialogAction
-                  disabled={!confirmed || deleteAccount.isPending}
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setConfirmText("")}>
+              {tc("cancel")}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              disabled={confirmText !== t("deleteConfirmPlaceholder") || deleteAccount.isPending}
                   onClick={(e) => {
                     e.preventDefault();
                     deleteAccount.mutate(undefined, {
