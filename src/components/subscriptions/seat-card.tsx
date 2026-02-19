@@ -30,24 +30,24 @@ function getExpiryStatus(activeUntil: string, t: (key: string, values?: Record<s
   if (diff < 0) {
     return {
       status: "expired",
-      label: t("status.expired"),
-      daysText: t("common.daysOverdue", { count: Math.abs(diff) }),
+      label: t("expired"),
+      daysText: t("daysOverdue", { count: Math.abs(diff) }),
     };
   }
   if (diff === 0) {
-    return { status: "expiring", label: t("common.today"), daysText: t("common.today") };
+    return { status: "expiring", label: t("today"), daysText: t("today") };
   }
   if (diff <= 3) {
     return {
       status: "expiring",
-      label: t("common.daysLeft", { count: diff }),
-      daysText: t("common.daysLeft", { count: diff }),
+      label: t("daysLeft", { count: diff }),
+      daysText: t("daysLeft", { count: diff }),
     };
   }
   return {
     status: "ok",
-    label: t("common.daysLeft", { count: diff }),
-    daysText: t("common.daysLeft", { count: diff }),
+    label: t("daysLeft", { count: diff }),
+    daysText: t("daysLeft", { count: diff }),
   };
 }
 
