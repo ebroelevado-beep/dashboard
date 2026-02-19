@@ -172,7 +172,8 @@
     "quickActions": "Quick Actions",
     "managePlatforms": "Manage Platforms",
     "viewSubscriptions": "View Subscriptions",
-    "viewClients": "View Clients"
+    "viewClients": "View Clients",
+    "viewPlans": "View Plans"
   },
   "platforms": {
     "title": "Platforms",

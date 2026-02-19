@@ -172,7 +172,8 @@
     "quickActions": "快捷操作",
     "managePlatforms": "管理平台",
     "viewSubscriptions": "查看订阅",
-    "viewClients": "查看客户"
+    "viewClients": "查看客户",
+    "viewPlans": "查看计划"
   },
   "platforms": {
     "title": "平台",
