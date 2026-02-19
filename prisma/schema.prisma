@@ -78,13 +78,11 @@ model VerificationToken {
 enum SubscriptionStatus {
   active
   paused
-  cancelled
 }
 
 enum ClientSubscriptionStatus {
   active
   paused
-  cancelled
 }
 
 // ──────────────────────────────────────────
@@ -211,7 +209,7 @@ model ClientSubscription {
 
 model RenewalLog {
   id                   String   @id @default(uuid())
-  clientSubscriptionId String   @map("client_subscription_id")
+  clientSubscriptionId String?  @map("client_subscription_id")
   amountPaid           Decimal  @map("amount_paid") @db.Decimal(10, 2)
   expectedAmount       Decimal  @map("expected_amount") @db.Decimal(10, 2)
   periodStart          DateTime @map("period_start") @db.Date
@@ -222,7 +220,7 @@ model RenewalLog {
   notes                String?  @db.Text
   createdAt            DateTime @default(now()) @map("created_at")
 
-  clientSubscription ClientSubscription @relation(fields: [clientSubscriptionId], references: [id], onDelete: Cascade)
+  clientSubscription ClientSubscription? @relation(fields: [clientSubscriptionId], references: [id], onDelete: SetNull)
 
   @@index([clientSubscriptionId])
   @@index([paidOn])

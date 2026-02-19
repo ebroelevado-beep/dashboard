@@ -10,6 +10,7 @@ import { UserCircle, Pause, Play, X, RefreshCw, Copy, Eye, EyeOff, Pencil } from
 import { useState } from "react";
 import { toast } from "sonner";
 import { differenceInDays, startOfDay } from "date-fns";
+import { useTranslations } from "next-intl";
 
 function formatCurrency(amount: number) {
   return new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR" }).format(amount);
@@ -17,7 +18,7 @@ function formatCurrency(amount: number) {
 
 type ExpiryStatus = "ok" | "expiring" | "expired";
 
-function getExpiryStatus(activeUntil: string): {
+function getExpiryStatus(activeUntil: string, t: (key: string, values?: any) => string): {
   status: ExpiryStatus;
   label: string;
   daysText: string;
@@ -29,24 +30,24 @@ function getExpiryStatus(activeUntil: string): {
   if (diff < 0) {
     return {
       status: "expired",
-      label: "Expired",
-      daysText: `${Math.abs(diff)}d overdue`,
+      label: t("status.expired"),
+      daysText: t("common.daysOverdue", { count: Math.abs(diff) }),
     };
   }
   if (diff === 0) {
-    return { status: "expiring", label: "Today!", daysText: "Expires today" };
+    return { status: "expiring", label: t("common.today"), daysText: t("common.today") };
   }
   if (diff <= 3) {
     return {
       status: "expiring",
-      label: `${diff}d left`,
-      daysText: `Expires in ${diff} day${diff !== 1 ? "s" : ""}`,
+      label: t("common.daysLeft", { count: diff }),
+      daysText: t("common.daysLeft", { count: diff }),
     };
   }
   return {
     status: "ok",
-    label: `${diff}d left`,
-    daysText: `${diff} days remaining`,
+    label: t("common.daysLeft", { count: diff }),
+    daysText: t("common.daysLeft", { count: diff }),
   };
 }
 
@@ -63,12 +64,11 @@ const expiryBadgeVariant: Record<ExpiryStatus, "default" | "secondary" | "destru
 };
 
 const statusBadgeConfig: Record<
-  "active" | "paused" | "cancelled",
-  { label: string; variant: "default" | "secondary" | "destructive" }
+  "active" | "paused",
+  { labelKey: string; variant: "default" | "secondary" | "destructive" }
 > = {
-  active: { label: "Active", variant: "default" },
-  paused: { label: "Paused", variant: "secondary" },
-  cancelled: { label: "Cancelled", variant: "destructive" },
+  active: { labelKey: "active", variant: "default" },
+  paused: { labelKey: "paused", variant: "secondary" },
 };
 
 interface SeatCardProps {
@@ -96,17 +96,22 @@ interface SeatCardProps {
 }
 
 export function SeatCard({ seat, onPause, onResume, onCancel, onRenew, onEdit }: SeatCardProps) {
+  const t = useTranslations("subscriptions");
+  const tc = useTranslations("common");
   const [showPassword, setShowPassword] = useState(false);
-  const expiry = getExpiryStatus(seat.activeUntil);
+  const expiry = getExpiryStatus(seat.activeUntil, tc);
   const hasCredentials = seat.client.serviceUser || seat.client.servicePassword;
   const isPaused = seat.status === "paused";
-  const isCancelled = seat.status === "cancelled";
   const isActive = seat.status === "active";
-  const statusConfig = statusBadgeConfig[seat.status];
+  
+  // Safety check for cancelled - treat as inactive/removed visually if it somehow leaks
+  if (seat.status === "cancelled") return null;
+
+  const statusConfig = statusBadgeConfig[seat.status as "active" | "paused"];
 
   const copyToClipboard = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
-    toast.success(`${label} copied`);
+    toast.success(tc("copied", { label }));
   };
 
   return (
@@ -114,9 +119,7 @@ export function SeatCard({ seat, onPause, onResume, onCancel, onRenew, onEdit }:
       className={`flex flex-col gap-3 rounded-lg border border-l-4 p-4 transition-colors ${
         isPaused
           ? "border-l-amber-500 bg-muted/40 opacity-80"
-          : isCancelled
-            ? "border-l-gray-400 bg-muted/30 opacity-60"
-            : `hover:bg-muted/50 ${expiryColors[expiry.status]}`
+          : `hover:bg-muted/50 ${expiryColors[expiry.status]}`
       }`}
     >
       {/* Header: Client name + status badge + actions */}
@@ -125,10 +128,10 @@ export function SeatCard({ seat, onPause, onResume, onCancel, onRenew, onEdit }:
           <div className="flex items-center justify-center size-8 rounded-full bg-muted">
             <UserCircle className="size-5 text-muted-foreground" />
           </div>
-          <div>
+          <div className="min-w-0">
             <Link
               href={`/dashboard/clients/${seat.clientId}`}
-              className="font-medium text-sm hover:underline"
+              className="font-medium text-sm hover:underline truncate block"
             >
               {seat.client.name}
             </Link>
@@ -139,95 +142,92 @@ export function SeatCard({ seat, onPause, onResume, onCancel, onRenew, onEdit }:
         </div>
         <div className="flex items-center gap-1">
           <Badge variant={statusConfig.variant} className="text-[10px] h-5">
-            {statusConfig.label}
+            {tc(statusConfig.labelKey)}
           </Badge>
-          {!isCancelled && (
-            <>
-              {/* Edit */}
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="size-7"
-                      onClick={onEdit}
-                    >
-                      <Pencil className="size-3.5" />
-                      <span className="sr-only">Edit</span>
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>Edit seat</TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+          
+          {/* Edit */}
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="size-7"
+                  onClick={onEdit}
+                >
+                  <Pencil className="size-3.5" />
+                  <span className="sr-only">{tc("edit")}</span>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>{t("editSeat")}</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
 
-              {/* Pause / Resume toggle */}
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className={`size-7 ${
-                        isPaused
-                          ? "text-green-600 hover:text-green-700 dark:text-green-400"
-                          : "text-amber-600 hover:text-amber-700 dark:text-amber-400"
-                      }`}
-                      onClick={isPaused ? onResume : onPause}
-                    >
-                      {isPaused ? <Play className="size-3.5" /> : <Pause className="size-3.5" />}
-                      <span className="sr-only">{isPaused ? "Resume" : "Pause"}</span>
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>{isPaused ? "Resume seat" : "Pause seat"}</TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+          {/* Pause / Resume toggle */}
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className={`size-7 ${
+                    isPaused
+                      ? "text-green-600 hover:text-green-700 dark:text-green-400"
+                      : "text-amber-600 hover:text-amber-700 dark:text-amber-400"
+                  }`}
+                  onClick={isPaused ? onResume : onPause}
+                >
+                  {isPaused ? <Play className="size-3.5" /> : <Pause className="size-3.5" />}
+                  <span className="sr-only">{isPaused ? tc("resume") : tc("pause")}</span>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>{isPaused ? t("resumeAll") : t("pauseAll")}</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
 
-              {/* Renew — only for active seats */}
-              {isActive && (
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="size-7 text-green-600 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300"
-                        onClick={onRenew}
-                      >
-                        <RefreshCw className="size-3.5" />
-                        <span className="sr-only">Renew</span>
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>Record payment</TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              )}
-
-              {/* Cancel */}
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="size-7 text-muted-foreground hover:text-destructive"
-                      onClick={onCancel}
-                    >
-                      <X className="size-3.5" />
-                      <span className="sr-only">Cancel</span>
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>Remove from subscription</TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            </>
+          {/* Renew — only for active seats */}
+          {isActive && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="size-7 text-green-600 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300"
+                    onClick={onRenew}
+                  >
+                    <RefreshCw className="size-3.5" />
+                    <span className="sr-only">{t("renewSeat")}</span>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>{t("renewPlatform")}</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           )}
+
+          {/* Cancel (Hard Delete) */}
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="size-7 text-muted-foreground hover:text-destructive"
+                  onClick={onCancel}
+                >
+                  <X className="size-3.5" />
+                  <span className="sr-only">{tc("delete")}</span>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>{t("removeSeat")}</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </div>
       </div>
 
       {/* Price */}
       <div className="flex items-center justify-between text-sm">
-        <span className="text-muted-foreground">Price</span>
+        <span className="text-muted-foreground">{tc("plan")}</span>
         <span className="font-mono font-medium">
           {formatCurrency(Number(seat.customPrice))}
         </span>
@@ -236,11 +236,11 @@ export function SeatCard({ seat, onPause, onResume, onCancel, onRenew, onEdit }:
       {/* Expiry with color */}
       <div className="flex items-center justify-between text-sm">
         <span className="text-muted-foreground">
-          {isPaused ? "Frozen until" : "Expires"}
+          {isPaused ? t("frozenUntil") : t("expires")}
         </span>
         <div className="flex items-center gap-2">
           <span className="text-xs text-muted-foreground">
-            {isPaused ? "Paused" : expiry.daysText}
+            {isPaused ? tc("paused") : expiry.daysText}
           </span>
           <Badge variant={isPaused ? "secondary" : expiryBadgeVariant[expiry.status]} className="text-xs">
             {new Date(seat.activeUntil).toLocaleDateString("es-ES")}
@@ -253,7 +253,7 @@ export function SeatCard({ seat, onPause, onResume, onCancel, onRenew, onEdit }:
         <div className="rounded border bg-muted/30 p-2 space-y-1.5">
           {seat.client.serviceUser && (
             <div className="flex items-center justify-between text-xs gap-2 overflow-hidden">
-              <span className="text-muted-foreground shrink-0">User</span>
+              <span className="text-muted-foreground shrink-0">{t("serviceUser")}</span>
               <div className="flex items-center gap-1 min-w-0">
                 <code className="font-mono text-xs truncate">{seat.client.serviceUser}</code>
                 <Button
@@ -261,7 +261,7 @@ export function SeatCard({ seat, onPause, onResume, onCancel, onRenew, onEdit }:
                   size="icon"
                   className="size-5 shrink-0"
                   onClick={() =>
-                    copyToClipboard(seat.client.serviceUser!, "User")
+                    copyToClipboard(seat.client.serviceUser!, t("serviceUser"))
                   }
                 >
                   <Copy className="size-3" />
@@ -271,7 +271,7 @@ export function SeatCard({ seat, onPause, onResume, onCancel, onRenew, onEdit }:
           )}
           {seat.client.servicePassword && (
             <div className="flex items-center justify-between text-xs">
-              <span className="text-muted-foreground">Pass</span>
+              <span className="text-muted-foreground">{t("servicePassword")}</span>
               <div className="flex items-center gap-1">
                 <code className="font-mono text-xs">
                   {showPassword
@@ -295,7 +295,7 @@ export function SeatCard({ seat, onPause, onResume, onCancel, onRenew, onEdit }:
                   size="icon"
                   className="size-5"
                   onClick={() =>
-                    copyToClipboard(seat.client.servicePassword!, "Password")
+                    copyToClipboard(seat.client.servicePassword!, t("servicePassword"))
                   }
                 >
                   <Copy className="size-3" />

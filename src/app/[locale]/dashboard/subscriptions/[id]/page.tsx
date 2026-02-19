@@ -32,6 +32,7 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 
 function formatCurrency(amount: number) {
   return new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR" }).format(amount);
@@ -49,6 +50,8 @@ export default function SubscriptionDetailPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  const t = useTranslations("subscriptions");
+  const tc = useTranslations("common");
   const { id } = use(params);
   const { data: sub, isLoading, isError } = useSubscription(id);
   const [addSeatOpen, setAddSeatOpen] = useState(false);
@@ -82,11 +85,11 @@ export default function SubscriptionDetailPage({
   if (isError || !sub) {
     return (
       <div className="flex flex-col items-center justify-center gap-4 py-12">
-        <p className="text-muted-foreground">Subscription not found.</p>
+        <p className="text-muted-foreground">{tc("noResultsFound")}</p>
         <Button asChild variant="outline">
           <Link href="/dashboard/subscriptions">
             <ArrowLeft className="mr-2 size-4" />
-            Back to Subscriptions
+            {t("title")}
           </Link>
         </Button>
       </div>
@@ -117,11 +120,11 @@ export default function SubscriptionDetailPage({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "pause" }),
       });
-      toast.success("All active seats paused");
+      toast.success(t("pauseAll"));
       pauseMutation.reset(); // trigger cache invalidation via window reload
       window.location.reload();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Bulk pause failed");
+      toast.error(err instanceof Error ? err.message : tc("error"));
     } finally {
       setBulkPending(false);
     }
@@ -135,10 +138,10 @@ export default function SubscriptionDetailPage({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "resume" }),
       });
-      toast.success("All paused seats resumed — paid days restored");
+      toast.success(t("resumeAll"));
       window.location.reload();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Bulk resume failed");
+      toast.error(err instanceof Error ? err.message : tc("error"));
     } finally {
       setBulkPending(false);
     }
@@ -163,7 +166,7 @@ export default function SubscriptionDetailPage({
         </div>
         <div className="flex items-center gap-2">
           <Badge variant={sub.status === "active" ? "default" : "secondary"}>
-            {sub.status}
+            {tc(sub.status)}
           </Badge>
           <Button
             variant="outline"
@@ -171,7 +174,7 @@ export default function SubscriptionDetailPage({
             onClick={() => setRenewPlatformOpen(true)}
           >
             <RefreshCw className="mr-2 size-4" />
-            Renew Platform
+            {t("renewPlatform")}
           </Button>
         </div>
       </div>
@@ -182,14 +185,14 @@ export default function SubscriptionDetailPage({
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Actual Revenue
+              {t("actualRevenue")}
             </CardTitle>
             <DollarSign className="size-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold">{formatCurrency(actualRevenue)}</p>
             <p className="text-xs text-muted-foreground">
-              from {activeSeats.length} active seat{activeSeats.length !== 1 && "s"}
+              {tc("activeSeats", { count: activeSeats.length })}
             </p>
           </CardContent>
         </Card>
@@ -198,7 +201,7 @@ export default function SubscriptionDetailPage({
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Potential Revenue
+              {t("potentialRevenue")}
             </CardTitle>
             <TrendingUp className="size-4 text-amber-500" />
           </CardHeader>
@@ -206,7 +209,7 @@ export default function SubscriptionDetailPage({
             <p className="text-2xl font-bold">{formatCurrency(potentialRevenue)}</p>
             {revenueDelta > 0 && (
               <p className="text-xs text-amber-600 dark:text-amber-400">
-                +{formatCurrency(revenueDelta)} if all resumed
+                {t("revenueDelta", { amount: formatCurrency(revenueDelta) })}
               </p>
             )}
           </CardContent>
@@ -216,14 +219,14 @@ export default function SubscriptionDetailPage({
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Platform Cost
+              {t("platformCost")}
             </CardTitle>
             <Calendar className="size-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold">{formatCurrency(cost)}</p>
             <p className="text-xs text-muted-foreground">
-              Expires {format(new Date(sub.activeUntil), "dd/MM/yyyy")}
+              {t("expires")} {format(new Date(sub.activeUntil), "dd/MM/yyyy")}
             </p>
           </CardContent>
         </Card>
@@ -232,7 +235,7 @@ export default function SubscriptionDetailPage({
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Profit
+              {tc("profitLabel", { ns: "analytics" })}
             </CardTitle>
             {profit >= 0 ? (
               <TrendingUp className="size-4 text-green-500" />
@@ -252,8 +255,8 @@ export default function SubscriptionDetailPage({
             </p>
             <p className="text-xs text-muted-foreground">
               {profitMargin >= 0
-                ? `${profitMargin.toFixed(0)}% margin`
-                : "Negative margin"}
+                ? tc("margin", { percent: profitMargin.toFixed(0) })
+                : tc("negativeMargin", { ns: "analytics", defaultValue: "Negative margin" })}
             </p>
           </CardContent>
         </Card>
@@ -262,7 +265,7 @@ export default function SubscriptionDetailPage({
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Occupancy
+              {t("occupancy")}
             </CardTitle>
             <Users className="size-4 text-muted-foreground" />
           </CardHeader>
@@ -278,7 +281,7 @@ export default function SubscriptionDetailPage({
             )}
             {pausedSeats.length > 0 && (
               <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
-                {pausedSeats.length} paused
+                {pausedSeats.length} {tc("paused")}
               </p>
             )}
           </CardContent>
@@ -288,7 +291,7 @@ export default function SubscriptionDetailPage({
       {/* Seat Map */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Seat Map</CardTitle>
+          <CardTitle>{t("seatMap")}</CardTitle>
           <div className="flex items-center gap-2">
             {/* Bulk actions */}
             {activeSeats.length > 0 && (
@@ -299,7 +302,7 @@ export default function SubscriptionDetailPage({
                 disabled={bulkPending}
               >
                 <PauseCircle className="mr-1.5 size-3.5" />
-                Pause All
+                {t("pauseAll")}
               </Button>
             )}
             {pausedSeats.length > 0 && (
@@ -310,12 +313,12 @@ export default function SubscriptionDetailPage({
                 disabled={bulkPending}
               >
                 <PlayCircle className="mr-1.5 size-3.5" />
-                Resume All
+                {t("resumeAll")}
               </Button>
             )}
             <Button size="sm" onClick={() => setAddSeatOpen(true)}>
               <Plus className="mr-2 size-4" />
-              Add Seat
+              {t("addSeat")}
             </Button>
           </div>
         </CardHeader>
@@ -323,10 +326,7 @@ export default function SubscriptionDetailPage({
           {sub.clientSubscriptions.length === 0 ? (
             <div className="py-8 text-center">
               <Users className="mx-auto mb-3 size-10 text-muted-foreground/50" />
-              <p className="text-muted-foreground">No seats assigned yet.</p>
-              <p className="text-sm text-muted-foreground">
-                Click &quot;Add Seat&quot; to assign a client.
-              </p>
+              <p className="text-muted-foreground">{t("noActiveSeats")}</p>
             </div>
           ) : (
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -350,7 +350,7 @@ export default function SubscriptionDetailPage({
       {sub.platformRenewals && sub.platformRenewals.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>Platform Renewal History</CardTitle>
+            <CardTitle>{tc("history", { ns: "nav" })}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
@@ -425,14 +425,13 @@ export default function SubscriptionDetailPage({
       <AlertDialog open={!!cancelSeatId} onOpenChange={(o) => { if (!o) setCancelSeatId(null); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Remove from Subscription?</AlertDialogTitle>
+            <AlertDialogTitle>{t("removeSeatConfirmationTitle")}</AlertDialogTitle>
             <AlertDialogDescription>
-              This will cancel the seat permanently. Renewal history will be preserved.
-              This action cannot be undone.
+              {t("removeSeatConfirmationDescription")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Keep seat</AlertDialogCancel>
+            <AlertDialogCancel>{t("keepSeatAction")}</AlertDialogCancel>
             <AlertDialogAction
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               onClick={() => {
@@ -443,7 +442,7 @@ export default function SubscriptionDetailPage({
                 }
               }}
             >
-              {cancelMutation.isPending ? "Cancelling…" : "Yes, remove"}
+              {cancelMutation.isPending ? t("cancelling") : t("removeSeatAction")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

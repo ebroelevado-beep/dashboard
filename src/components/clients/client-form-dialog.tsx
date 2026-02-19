@@ -11,6 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useTranslations } from "next-intl";
 
 const schema = z.object({
   name: z.string().min(1, "Name is required").max(150),
@@ -34,6 +35,8 @@ interface ClientFormDialogProps {
 }
 
 export function ClientFormDialog({ mode, client, open, onOpenChange }: ClientFormDialogProps) {
+  const t = useTranslations("clients");
+  const tc = useTranslations("common");
   const createMutation = useCreateClient();
   const updateMutation = useUpdateClient();
   const isPending = createMutation.isPending || updateMutation.isPending;
@@ -78,42 +81,40 @@ export function ClientFormDialog({ mode, client, open, onOpenChange }: ClientFor
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>{mode === "create" ? "Add Client" : "Edit Client"}</DialogTitle>
+          <DialogTitle>{mode === "create" ? t("addTitle") : t("editTitle")}</DialogTitle>
           <DialogDescription>
-            {mode === "create" ? "Add a new client to your roster." : "Update this client's info."}
+            {mode === "create" ? t("addDescription") : t("editDescription")}
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="client-name">Name</Label>
-            <Input id="client-name" placeholder="John Doe" {...register("name")} />
+            <Label htmlFor="client-name">{t("nameLabel")}</Label>
+            <Input id="client-name" placeholder={t("namePlaceholder")} {...register("name")} />
             {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="client-phone">Phone</Label>
-            <Input id="client-phone" placeholder="+34 600 000 000" {...register("phone")} />
+            <Label htmlFor="client-phone">{t("phoneLabel")}</Label>
+            <Input id="client-phone" placeholder={t("phonePlaceholder")} {...register("phone")} />
           </div>
 
-
-
           <div className="space-y-2">
-            <Label htmlFor="client-notes">Notes</Label>
+            <Label htmlFor="client-notes">{t("notesLabel")}</Label>
             <textarea
               id="client-notes"
               className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-              placeholder="Optional notes…"
+              placeholder={t("notesPlaceholder")}
               {...register("notes")}
             />
           </div>
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Cancel
+              {tc("cancel")}
             </Button>
             <Button type="submit" disabled={isPending}>
-              {isPending ? "Saving…" : mode === "create" ? "Create" : "Save changes"}
+              {isPending ? tc("saving") : mode === "create" ? tc("create") : tc("saveChanges")}
             </Button>
           </DialogFooter>
         </form>

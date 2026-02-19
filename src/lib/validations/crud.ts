@@ -33,7 +33,7 @@ export const createSubscriptionSchema = z.object({
   label: z.string().min(1).max(100),
   startDate: z.string().date().transform((val) => new Date(val)),
   durationMonths: z.number().int().positive(),
-  status: z.enum(["active", "paused", "cancelled"]).optional().default("active"),
+  status: z.enum(["active", "paused"]).optional().default("active"),
   masterUsername: z.string().max(100).nullable().optional(),
   masterPassword: z.string().max(100).nullable().optional(),
   ownerId: z.string().uuid().nullable().optional(),
@@ -68,7 +68,7 @@ export const createClientSubscriptionSchema = z.object({
   servicePassword: z.string().max(100).nullable().optional(),
   startDate: z.string().date().transform((val) => new Date(val)).optional(),
   status: z
-    .enum(["active", "paused", "cancelled"])
+    .enum(["active", "paused"])
     .optional()
     .default("active"),
 });
@@ -134,7 +134,7 @@ export type RenewPlatformSubscriptionInput = z.infer<
 // ──────────────────────────────────────────
 
 export const updateSeatSchema = z.object({
-  status: z.enum(["active", "paused", "cancelled"]).optional(),
+  status: z.enum(["active", "paused"]).optional(),
   customPrice: z.number().min(0).optional(),
   durationMonths: z.number().int().positive().optional(), // only for reactivation
   startDate: z.string().date().transform((val) => new Date(val)).optional(),

@@ -13,6 +13,7 @@ import { Separator } from "@/components/ui/separator";
 import { RefreshCw, CheckSquare, Square } from "lucide-react";
 import { addMonths, startOfDay, format, differenceInDays } from "date-fns";
 import { useRenewBulkClients } from "@/hooks/use-renewals";
+import { useTranslations } from "next-intl";
 
 function formatCurrency(amount: number) {
   return new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR" }).format(amount);
@@ -42,6 +43,8 @@ export function BulkRenewDialog({
   clientName,
   seats,
 }: BulkRenewDialogProps) {
+  const t = useTranslations("clients");
+  const tc = useTranslations("common");
   const bulkMut = useRenewBulkClients();
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [months, setMonths] = useState(1);
@@ -123,22 +126,24 @@ export function BulkRenewDialog({
     );
   };
 
+  const allSelected = selectedIds.size === renewableSeats.length;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <RefreshCw className="size-5 text-primary" />
-            Renew All — {clientName}
+            {t("renewAllTitle")} — {clientName}
           </DialogTitle>
           <DialogDescription>
-            Select the services to renew and choose how many months.
+            {t("renewAllDescription")}
           </DialogDescription>
         </DialogHeader>
 
         {/* Months input */}
         <div className="space-y-2">
-          <Label htmlFor="bulk-months">Months to Renew</Label>
+          <Label htmlFor="bulk-months">{t("monthsToRenew")}</Label>
           <Input
             id="bulk-months"
             type="number"
@@ -157,12 +162,12 @@ export function BulkRenewDialog({
           className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
           onClick={toggleAll}
         >
-          {selectedIds.size === renewableSeats.length ? (
+          {allSelected ? (
             <CheckSquare className="size-4 text-primary" />
           ) : (
             <Square className="size-4" />
           )}
-          {selectedIds.size === renewableSeats.length ? "Deselect all" : "Select all"}
+          {allSelected ? tc("deselectAll") : tc("selectAll")}
         </button>
 
         {/* Seat list */}
@@ -203,7 +208,7 @@ export function BulkRenewDialog({
                   <div className="flex items-center gap-1.5">
                     <span className={seat.isLapsed ? "text-destructive font-medium" : ""}>
                       {format(seat.currentExpiry, "dd/MM/yy")}
-                      {seat.isLapsed && " (lapsed)"}
+                      {seat.isLapsed && ` (${tc("lapsed")})`}
                     </span>
                     <span>→</span>
                     <Badge
@@ -218,7 +223,7 @@ export function BulkRenewDialog({
                 {/* Row 3: price per month hint */}
                 {months > 1 && (
                   <p className="text-[10px] text-muted-foreground pl-6">
-                    {formatCurrency(seat.customPrice)}/mo × {months}
+                    {formatCurrency(seat.customPrice)}{t("perMonth")} × {months}
                   </p>
                 )}
               </button>
@@ -231,7 +236,7 @@ export function BulkRenewDialog({
         {/* Total */}
         <div className="flex items-center justify-between text-sm">
           <span className="text-muted-foreground">
-            Total ({selectedCount} service{selectedCount !== 1 ? "s" : ""})
+            {tc("totalCount", { count: selectedCount })}
           </span>
           <span className="text-lg font-bold font-mono">
             {formatCurrency(selectedTotal)}
@@ -244,7 +249,7 @@ export function BulkRenewDialog({
             variant="outline"
             onClick={() => onOpenChange(false)}
           >
-            Cancel
+            {tc("cancel")}
           </Button>
           <Button
             type="button"
@@ -252,8 +257,8 @@ export function BulkRenewDialog({
             onClick={handleConfirm}
           >
             {bulkMut.isPending
-              ? "Processing…"
-              : `Renew ${selectedCount} Service${selectedCount !== 1 ? "s" : ""}`}
+              ? tc("processing")
+              : t("renewServicesAction", { count: selectedCount })}
           </Button>
         </DialogFooter>
       </DialogContent>

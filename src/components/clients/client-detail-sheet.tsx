@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import { differenceInDays, startOfDay, addMonths, subMonths, format } from "date-fns";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 
 function formatCurrency(amount: number) {
   return new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR" }).format(amount);
@@ -51,14 +52,15 @@ const expiryBadge: Record<ExpiryStatus, "default" | "secondary" | "destructive">
 
 // ── WhatsApp helpers ──
 
-type Lang = "es" | "en";
+type Lang = "es" | "en" | "zh";
 
 function buildWhatsAppUrl(
   phone: string,
   name: string,
   seats: { customPrice: number; activeUntil: string; platformName: string }[],
-  lang: Lang
-) {
+  lang: Lang,
+  t: (key: string, values?: Record<string, string | number>) => string
+): string {
   const totalPrice = seats.reduce((s, x) => s + x.customPrice, 0);
   const services = [...new Set(seats.map((s) => s.platformName))].join(", ");
 
@@ -68,27 +70,25 @@ function buildWhatsAppUrl(
   const minDays = Math.min(...daysArr);
 
   let daysText: string;
-  if (lang === "es") {
-    daysText =
-      minDays < 0
-        ? `con ${Math.abs(minDays)} día${Math.abs(minDays) !== 1 ? "s" : ""} de retraso`
-        : `te quedan ${minDays} día${minDays !== 1 ? "s" : ""} para pagar`;
+  if (minDays < 0) {
+    daysText = t("common.daysOverdue", { count: Math.abs(minDays) });
+  } else if (minDays === 0) {
+    daysText = t("common.today");
   } else {
-    daysText =
-      minDays < 0
-        ? `overdue by ${Math.abs(minDays)} day${Math.abs(minDays) !== 1 ? "s" : ""}`
-        : `you have ${minDays} day${minDays !== 1 ? "s" : ""} left to pay`;
+    daysText = t("common.daysLeft", { count: minDays });
   }
 
   const priceStr = formatCurrency(totalPrice);
 
-  const msg =
-    lang === "es"
-      ? `Hola ${name}, ${daysText} ${priceStr} por ${services}. Gracias de parte del equipo de Pearfect S.L.`
-      : `Hello ${name}, ${daysText} ${priceStr} for ${services}. Thanks from the Pearfect S.L. team.`;
+  const msg = t("clients.whatsappTemplate", {
+    name,
+    daysText,
+    priceStr,
+    services,
+  });
 
   // Clean phone: remove spaces, dashes, ensure starts with +
-  const cleanPhone = phone.replace(/[\s\-()]/g, "");
+  const cleanPhone = phone.replace(/[\s-()]/g, "");
   return `https://wa.me/${cleanPhone}?text=${encodeURIComponent(msg)}`;
 }
 
@@ -101,6 +101,8 @@ interface ClientDetailSheetProps {
 }
 
 export function ClientDetailSheet({ clientId, open, onOpenChange }: ClientDetailSheetProps) {
+  const t = useTranslations("clients");
+  const tc = useTranslations("common");
   const { data: client, isLoading } = useClient(clientId ?? undefined);
   const renewMut = useRenewClient();
   const [showPasswords, setShowPasswords] = useState<Record<string, boolean>>({});
@@ -120,7 +122,7 @@ export function ClientDetailSheet({ clientId, open, onOpenChange }: ClientDetail
 
   const copyToClipboard = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
-    toast.success(`${label} copied`);
+    toast.success(tc("copied", { label }));
   };
 
   const openRenewDialog = (seat: {
@@ -183,7 +185,14 @@ export function ClientDetailSheet({ clientId, open, onOpenChange }: ClientDetail
       activeUntil: cs.activeUntil,
       platformName: cs.subscription.plan.platform.name,
     }));
-    const url = buildWhatsAppUrl(client.phone, client.name, waData, lang);
+    // We pass a dummy 't' that can handle placeholders or just use the current translation context
+    // Actually, it's better to use the useTranslations hook results if we want to support dynamic switching
+    // But since the helper is outside, let's just use the current 'tc' and 't' from hook in this scope
+    const url = buildWhatsAppUrl(client.phone, client.name, waData, lang, (key: string, vals?: Record<string, string | number>) => {
+      if (key.startsWith("common.")) return tc(key.replace("common.", ""), vals);
+      if (key.startsWith("clients.")) return t(key.replace("clients.", ""), vals);
+      return key;
+    });
     window.open(url, "_blank", "noopener,noreferrer");
   };
 
@@ -191,9 +200,9 @@ export function ClientDetailSheet({ clientId, open, onOpenChange }: ClientDetail
     <>
       <Sheet open={open} onOpenChange={onOpenChange}>
         <SheetContent side="right" className="w-full max-w-lg overflow-y-auto">
-          <SheetTitle className="sr-only">Client Details</SheetTitle>
+          <SheetTitle className="sr-only">{t("clientDetail")}</SheetTitle>
           <SheetDescription className="sr-only">
-            Manage seats, renewals, and send reminders for this client.
+            {t("description")}
           </SheetDescription>
 
           {isLoading || !client ? (
@@ -214,7 +223,7 @@ export function ClientDetailSheet({ clientId, open, onOpenChange }: ClientDetail
                   <div>
                     <h2 className="text-xl font-bold">{client.name}</h2>
                     <p className="text-sm text-muted-foreground">
-                      {client.phone ?? "No phone"} · {client.notes ?? "No notes"}
+                      {client.phone ?? t("noPhone")} · {client.notes ?? t("noNotes")}
                     </p>
                   </div>
                 </div>
@@ -223,13 +232,13 @@ export function ClientDetailSheet({ clientId, open, onOpenChange }: ClientDetail
               {/* Credentials */}
               {(client.serviceUser || client.servicePassword) && (
                 <div className="rounded-lg border bg-muted/30 p-3 space-y-2">
-                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Credentials</p>
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{tc("credentials")}</p>
                   {client.serviceUser && (
                     <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">User</span>
+                      <span className="text-muted-foreground">{tc("username")}</span>
                       <div className="flex items-center gap-1">
                         <code className="font-mono text-sm">{client.serviceUser}</code>
-                        <Button variant="ghost" size="icon" className="size-6" onClick={() => copyToClipboard(client.serviceUser!, "User")}>
+                        <Button variant="ghost" size="icon" className="size-6" onClick={() => copyToClipboard(client.serviceUser!, tc("username"))}>
                           <Copy className="size-3" />
                         </Button>
                       </div>
@@ -237,7 +246,7 @@ export function ClientDetailSheet({ clientId, open, onOpenChange }: ClientDetail
                   )}
                   {client.servicePassword && (
                     <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">Pass</span>
+                      <span className="text-muted-foreground">{tc("password")}</span>
                       <div className="flex items-center gap-1">
                         <code className="font-mono text-sm">
                           {showPasswords["global"] ? client.servicePassword : "••••••••"}
@@ -246,7 +255,7 @@ export function ClientDetailSheet({ clientId, open, onOpenChange }: ClientDetail
                           onClick={() => setShowPasswords((p) => ({ ...p, global: !p.global }))}>
                           {showPasswords["global"] ? <EyeOff className="size-3" /> : <Eye className="size-3" />}
                         </Button>
-                        <Button variant="ghost" size="icon" className="size-6" onClick={() => copyToClipboard(client.servicePassword!, "Password")}>
+                        <Button variant="ghost" size="icon" className="size-6" onClick={() => copyToClipboard(client.servicePassword!, tc("password"))}>
                           <Copy className="size-3" />
                         </Button>
                       </div>
@@ -265,7 +274,7 @@ export function ClientDetailSheet({ clientId, open, onOpenChange }: ClientDetail
                   disabled={!canSendReminder}
                 >
                   <MessageCircle className="mr-2 size-4" />
-                  Send Reminder
+                  {t("sendReminder")}
                 </Button>
                 <TooltipProvider>
                   <Tooltip>
@@ -274,30 +283,34 @@ export function ClientDetailSheet({ clientId, open, onOpenChange }: ClientDetail
                         variant="ghost"
                         size="sm"
                         className="font-mono text-xs"
-                        onClick={() => setLang(lang === "es" ? "en" : "es")}
+                        onClick={() => {
+                          if (lang === "es") setLang("en");
+                          else if (lang === "en") setLang("zh");
+                          else setLang("es");
+                        }}
                       >
-                        {lang === "es" ? "🇪🇸 ES" : "🇬🇧 EN"}
+                        {lang === "es" ? "🇪🇸 ES" : lang === "en" ? "🇬🇧 EN" : "🇨🇳 ZH"}
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent>
-                      {lang === "es" ? "Switch to English" : "Cambiar a español"}
+                      {tc("changeLanguage")}
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
               </div>
 
               {!canSendReminder && client.phone && activeSeats.length === 0 && (
-                <p className="text-xs text-muted-foreground">No active seats to remind about.</p>
+                <p className="text-xs text-muted-foreground">{t("noActiveSeatsToRemind")}</p>
               )}
               {!client.phone && (
-                <p className="text-xs text-amber-600 dark:text-amber-400">Add a phone number to enable WhatsApp reminders.</p>
+                <p className="text-xs text-amber-600 dark:text-amber-400">{t("addPhoneWarning")}</p>
               )}
 
               {/* Seats */}
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <p className="text-sm font-medium">
-                    Seats ({client.clientSubscriptions.length})
+                    {t("seatsSection")} ({client.clientSubscriptions.length})
                   </p>
                   {activeSeats.length >= 2 && (
                     <Button
@@ -307,28 +320,28 @@ export function ClientDetailSheet({ clientId, open, onOpenChange }: ClientDetail
                       onClick={() => setBulkRenewOpen(true)}
                     >
                       <RefreshCw className="mr-1.5 size-3" />
-                      Renew All
+                      {t("renewAll")}
                     </Button>
                   )}
                 </div>
 
                 {client.clientSubscriptions.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">No seats assigned.</p>
+                  <p className="text-sm text-muted-foreground">{t("noActiveSeats")}</p>
                 ) : (
                   client.clientSubscriptions.map((cs) => {
                     const expiry = getExpiryInfo(cs.activeUntil);
                     const isPaused = cs.status === "paused";
-                    const isCancelled = cs.status === "cancelled";
+                    
+                    // Safety check for removed status
+                    if (cs.status === "cancelled") return null;
 
                     return (
                       <div
                         key={cs.id}
                         className={`rounded-lg border p-3 space-y-2 transition-colors ${
-                          isCancelled
-                            ? "opacity-50 bg-muted/20"
-                            : isPaused
-                              ? "opacity-80 bg-amber-50/30 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800"
-                              : ""
+                          isPaused
+                            ? "opacity-80 bg-amber-50/30 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800"
+                            : ""
                         }`}
                       >
                         {/* Service info */}
@@ -344,10 +357,9 @@ export function ClientDetailSheet({ clientId, open, onOpenChange }: ClientDetail
                             <p className="text-xs text-muted-foreground">{cs.subscription.label}</p>
                           </div>
                           <Badge variant={
-                            cs.status === "active" ? "default" :
-                            cs.status === "paused" ? "secondary" : "destructive"
+                            cs.status === "active" ? "default" : "secondary"
                           } className="text-[10px] h-5">
-                            {cs.status}
+                            {tc(cs.status)}
                           </Badge>
                         </div>
 
@@ -357,12 +369,12 @@ export function ClientDetailSheet({ clientId, open, onOpenChange }: ClientDetail
                           <div className="flex items-center gap-1.5">
                             <span className="text-xs text-muted-foreground">
                               {isPaused
-                                ? "Frozen"
+                                ? tc("paused")
                                 : expiry.diff < 0
-                                  ? `${Math.abs(expiry.diff)}d overdue`
+                                  ? tc("daysOverdue", { count: Math.abs(expiry.diff) })
                                   : expiry.diff === 0
-                                    ? "Today!"
-                                    : `${expiry.diff}d left`}
+                                    ? tc("today")
+                                    : tc("daysLeft", { count: expiry.diff })}
                             </span>
                             <Badge variant={isPaused ? "secondary" : expiryBadge[expiry.status]} className="text-[10px]">
                               {format(new Date(cs.activeUntil), "dd/MM/yyyy")}
@@ -383,7 +395,7 @@ export function ClientDetailSheet({ clientId, open, onOpenChange }: ClientDetail
                             })}
                           >
                             <RefreshCw className="mr-2 size-3.5" />
-                            Renew
+                            {t("renewSeat")}
                           </Button>
                         )}
 
@@ -391,7 +403,7 @@ export function ClientDetailSheet({ clientId, open, onOpenChange }: ClientDetail
                         {cs.renewalLogs.length > 0 && (
                           <div className="border-t pt-2 mt-1">
                             <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-1">
-                              Recent Payments
+                              {tc("history", { ns: "nav" })}
                             </p>
                             {cs.renewalLogs.slice(0, 3).map((r) => (
                               <div key={r.id} className="flex items-center justify-between text-xs text-muted-foreground">
@@ -415,11 +427,13 @@ export function ClientDetailSheet({ clientId, open, onOpenChange }: ClientDetail
       <Dialog open={!!renewSeat} onOpenChange={(o) => { if (!o) setRenewSeat(null); }}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>{isRenewCorrection ? "Correction" : "Renew"} — {renewSeat?.clientName ?? "Client"}</DialogTitle>
+            <DialogTitle>
+              {(isRenewCorrection ? tc("correction") : t("renewSeat"))} — {renewSeat?.clientName ?? ""}
+            </DialogTitle>
           </DialogHeader>
           <form onSubmit={handleRenew} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="renew-amount">Amount Received (€)</Label>
+              <Label htmlFor="renew-amount">{tc("amountPaid")} (€)</Label>
               <Input
                 id="renew-amount"
                 type="number"
@@ -429,12 +443,12 @@ export function ClientDetailSheet({ clientId, open, onOpenChange }: ClientDetail
               />
               {renewMonths > 1 && renewSeat && (
                 <p className="text-xs text-muted-foreground">
-                  Auto-calculated: {Number(renewSeat.customPrice).toFixed(2)} × {renewMonths} months
+                  {tc("autoCalculated")}: {Number(renewSeat.customPrice).toFixed(2)} × {renewMonths} {t("renewMonths")}
                 </p>
               )}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="renew-months">Months</Label>
+              <Label htmlFor="renew-months">{t("renewMonths")}</Label>
               <Input
                 id="renew-months"
                 type="number"
@@ -444,37 +458,37 @@ export function ClientDetailSheet({ clientId, open, onOpenChange }: ClientDetail
                 onChange={(e) => handleRenewMonthsChange(Number(e.target.value) || 1)}
               />
               <p className="text-xs text-muted-foreground">
-                Positive = extend, negative = correction
+                {tc("renewMonthsHint")}
               </p>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="renew-notes">Notes (optional)</Label>
+              <Label htmlFor="renew-notes">{tc("notes")} ({tc("optional")})</Label>
               <Input
                 id="renew-notes"
                 value={renewNotes}
                 onChange={(e) => setRenewNotes(e.target.value)}
-                placeholder="e.g. Paid via Bizum"
+                placeholder={tc("notesPlaceholder")}
               />
             </div>
 
             {/* Preview */}
             <div className="rounded-lg border bg-muted/50 p-3 space-y-1 text-sm">
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Current expiry</span>
+                <span className="text-muted-foreground">{tc("currentExpiry")}</span>
                 <span className={isLapsed ? "text-destructive font-medium" : ""}>
                   {format(currentExpiry, "dd/MM/yyyy")}
-                  {isLapsed && " (lapsed)"}
+                  {isLapsed && ` (${tc("lapsed")})`}
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted-foreground">New expiry</span>
+                <span className="text-muted-foreground">{tc("newExpiry")}</span>
                 <span className={`font-semibold ${resultInPast ? "text-destructive" : "text-green-600 dark:text-green-400"}`}>
                   {format(newExpiry, "dd/MM/yyyy")}
                 </span>
               </div>
               {isLapsed && renewMonths > 0 && (
                 <p className="text-xs text-muted-foreground mt-1">
-                  Lapsed — renewal starts from today instead of the old expiry.
+                  {tc("lapsedHint")}
                 </p>
               )}
             </div>
@@ -482,16 +496,16 @@ export function ClientDetailSheet({ clientId, open, onOpenChange }: ClientDetail
             {resultInPast && (
               <div className="flex items-start gap-2 rounded-md border border-amber-500/50 bg-amber-50 dark:bg-amber-950/20 p-3 text-sm text-amber-800 dark:text-amber-300">
                 <AlertTriangle className="size-4 mt-0.5 shrink-0" />
-                <span>This will set the expiry to a past date. The seat will show as <strong>expired</strong>.</span>
+                <span>{tc("resultInPastWarning")}</span>
               </div>
             )}
 
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setRenewSeat(null)}>
-                Cancel
+                {tc("cancel")}
               </Button>
               <Button type="submit" disabled={renewMut.isPending} variant={isRenewCorrection ? "destructive" : "default"}>
-                {renewMut.isPending ? "Processing…" : isRenewCorrection ? "Apply Correction" : "Confirm Renewal"}
+                {renewMut.isPending ? tc("saving") : isRenewCorrection ? tc("applyCorrection") : tc("confirm")}
               </Button>
             </DialogFooter>
           </form>

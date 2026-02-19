@@ -37,7 +37,7 @@ function getClientStatus(client: Client): ClientStatus {
   return "paid";
 }
 
-const statusConfig = (t: any) => ({
+const statusConfig = (t: (key: string, values?: Record<string, string | number>) => string) => ({
   paid: { label: t("status.paid"), variant: "default" as const },
   due: { label: t("status.due"), variant: "secondary" as const },
   expired: { label: t("status.expired"), variant: "destructive" as const },
