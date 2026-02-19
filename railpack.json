@@ -7,6 +7,7 @@
   "steps": {
     "build": {
       "commands": [
+        "pnpm prisma migrate deploy",
         "pnpm build",
         "cp -r public .next/standalone/public",
         "cp -r .next/static .next/standalone/.next/static"
