@@ -87,11 +87,11 @@ export async function GET(request: NextRequest) {
         paidOn: l.paidOn.toISOString().split("T")[0],
         periodStart: l.periodStart.toISOString().split("T")[0],
         periodEnd: l.periodEnd.toISOString().split("T")[0],
-        platform: l.clientSubscription.subscription.plan.platform.name,
-        plan: l.clientSubscription.subscription.plan.name,
-        subscriptionLabel: l.clientSubscription.subscription.label,
-        subscriptionId: l.clientSubscription.subscription.id,
-        clientName: l.clientSubscription.client.name,
+        platform: l.clientSubscription?.subscription.plan.platform.name ?? "Deleted",
+        plan: l.clientSubscription?.subscription.plan.name ?? "Deleted",
+        subscriptionLabel: l.clientSubscription?.subscription.label ?? "Deleted",
+        subscriptionId: l.clientSubscription?.subscription.id ?? "deleted",
+        clientName: l.clientSubscription?.client.name ?? "Deleted Client",
         notes: l.notes,
       }));
       incomeCount = count;
