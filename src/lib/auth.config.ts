@@ -65,9 +65,8 @@ export const authConfig = {
       },
     },
   },
-  pages: {
-    signIn: "/login",
-  },
+  // Removed pages: { signIn: "/login" } so NextAuth doesn't enforce redirects early in middleware. 
+  // We handle routing dynamically per locale in middleware.ts.
 
   providers: [
     Google({
@@ -98,6 +97,23 @@ export const authConfig = {
         session.user.isOAuth = token.isOAuth as boolean;
       }
       return session;
+    },
+    authorized({ auth, request: { nextUrl } }) {
+      const isLoggedIn = !!auth?.user;
+      const isDashboard = nextUrl.pathname.match(/^\/(en|es|zh)\/dashboard/);
+      
+      if (isDashboard && !isLoggedIn) {
+        // Extract locale from the current path
+        const pathnameParts = nextUrl.pathname.split('/');
+        const potentialLocale = pathnameParts[1];
+        const locale = ["en", "es", "zh"].includes(potentialLocale) ? potentialLocale : "en";
+        
+        // Construct localized login URL
+        const loginUrl = new URL(`/${locale}/login`, nextUrl.origin);
+        return Response.redirect(loginUrl);
+      }
+      
+      return true;
     },
   },
 } satisfies NextAuthConfig;
