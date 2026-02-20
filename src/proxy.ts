@@ -1,11 +1,9 @@
 import createIntlMiddleware from "next-intl/middleware";
 import { routing } from "@/i18n/routing";
-import NextAuth from "next-auth";
-import { authConfig } from "@/lib/auth.config";
-import { type NextRequest } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
+import { getToken } from "next-auth/jwt";
 
 const intlMiddleware = createIntlMiddleware(routing);
-const { auth } = NextAuth(authConfig);
 
 const publicPages = ["/", "/login", "/signup"];
 
@@ -18,22 +16,33 @@ export default async function middleware(req: NextRequest) {
       req.nextUrl.pathname.startsWith(`/zh${page}`)
   );
 
-  // If it's a public page, return `intlMiddleware` IMMEDIATELY.
-  // Do NOT pass it to `auth(...)` wrapper.
-  // NextAuth automatically issues a 307 redirect from HTTP to HTTPS if it detects
-  // useSecureCookies=true but sees an incoming `http:` protocol (which happens behind Dokploy).
-  // This causes infinite redirect loops on public pages.
-  if (isPublicPage) {
-    return intlMiddleware(req);
+  // For protected pages, manually check the NextAuth JWT.
+  // We completely bypass the NextAuth `auth()` wrapper because it forces infinite
+  // 307 HTTPS redirects when it detects `http:` coming from the Dokploy reverse proxy.
+  if (!isPublicPage) {
+    const token = await getToken({
+      req,
+      secret: process.env.NEXTAUTH_SECRET,
+      secureCookie: process.env.NODE_ENV === "production",
+      cookieName: process.env.NODE_ENV === "production" ? "__Secure-authjs.session-token" : "authjs.session-token",
+    });
+
+    if (!token) {
+      const url = req.nextUrl.clone();
+      
+      // Extract locale from the current path if present
+      const pathnameParts = req.nextUrl.pathname.split('/');
+      const potentialLocale = pathnameParts[1];
+      const locale = ["en", "es", "zh"].includes(potentialLocale) ? potentialLocale : "en";
+      
+      url.pathname = `/${locale}/login`;
+      return NextResponse.redirect(url);
+    }
   }
 
-  // Handle protected pages with the NextAuth wrapper.
-  return auth((req) => {
-    // Inside the wrapped request, NextAuth's `authorized` callback will enforce session rules.
-    // If authenticated, we just pass the request to next-intl for routing.
-    return intlMiddleware(req);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  })(req, {} as any);
+  // Pass ALL requests (public or successfully authenticated) to next-intl
+  // to handle routing, prefixing, and locale negotiation.
+  return intlMiddleware(req);
 }
 
 export const config = {
