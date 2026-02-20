@@ -1,5 +1,6 @@
 {
   "common": {
+    "goBack": "Go Back",
     "signIn": "Sign In",
     "signOut": "Sign Out",
     "signUp": "Sign Up",

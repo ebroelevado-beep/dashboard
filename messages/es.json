@@ -1,5 +1,6 @@
 {
   "common": {
+    "goBack": "Atrás",
     "signIn": "Iniciar Sesión",
     "signOut": "Cerrar Sesión",
     "signUp": "Registrarse",

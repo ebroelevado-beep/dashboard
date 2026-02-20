@@ -8,7 +8,7 @@ import { Link } from "@/i18n/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Loader2, ArrowLeft } from "lucide-react";
 
 import { loginSchema, type LoginInput } from "@/lib/validations/auth";
 import { Button } from "@/components/ui/button";
@@ -24,6 +24,8 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { SocialAuth } from "@/components/auth/social-auth";
+import { LanguageSwitcher } from "@/components/language-switcher";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 export default function LoginPage() {
   const t = useTranslations("auth");
@@ -64,31 +66,51 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-dvh flex items-center justify-center p-4 bg-gradient-to-br from-background via-background to-muted/50">
-      <div className="w-full max-w-md space-y-6">
-        {/* Logo */}
-        <div className="flex flex-col items-center gap-2">
-          <Logo size={44} className="text-primary" />
-          <h1 className="text-xl font-semibold tracking-tight">Pearfect S.L.</h1>
+    <div className="relative min-h-dvh flex flex-col items-center justify-center p-4 bg-gradient-to-br from-background via-background to-muted/30">
+      
+      {/* ── Top Navigation / Utility Bar ── */}
+      <div className="absolute top-0 left-0 w-full p-4 sm:p-6 flex items-center justify-between">
+        <Button variant="ghost" size="sm" asChild className="gap-2 text-muted-foreground hover:text-foreground">
+          <Link href="/">
+            <ArrowLeft className="size-4" />
+            <span className="hidden sm:inline">{tc("goBack") || "Atrás"}</span>
+          </Link>
+        </Button>
+
+        <div className="flex items-center gap-2">
+          <LanguageSwitcher />
+          <ThemeToggle />
+        </div>
+      </div>
+
+      <div className="w-full max-w-md space-y-8 z-10">
+        {/* Logo area */}
+        <div className="flex flex-col items-center gap-3">
+          <div className="p-3 bg-muted/50 rounded-2xl border border-border/50 shadow-sm">
+            <Logo size={40} className="text-primary" />
+          </div>
+          <h1 className="text-2xl font-bold tracking-tight">Pearfect S.L.</h1>
         </div>
 
-        <Card className="shadow-xl shadow-black/5">
-          <CardHeader className="text-center">
-            <CardTitle className="text-xl">{t("loginTitle")}</CardTitle>
-            <CardDescription>
+        {/* Form Card */}
+        <Card className="border-border/60 shadow-2xl shadow-black/5 bg-background/80 backdrop-blur-xl">
+          <CardHeader className="text-center pb-6">
+            <CardTitle className="text-2xl font-semibold tracking-tight">{t("loginTitle")}</CardTitle>
+            <CardDescription className="text-sm mt-2">
               {t("loginDescription")}
             </CardDescription>
           </CardHeader>
 
           <form onSubmit={handleSubmit(onSubmit)}>
             <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="email">{t("emailLabel")}</Label>
+              <div className="space-y-2.5">
+                <Label htmlFor="email" className="text-sm font-medium">{t("emailLabel")}</Label>
                 <Input
                   id="email"
                   type="email"
                   placeholder={t("emailPlaceholder")}
                   autoComplete="email"
+                  className="bg-muted/30 focus-visible:bg-transparent transition-colors"
                   {...register("email")}
                 />
                 {errors.email && (
@@ -96,13 +118,16 @@ export default function LoginPage() {
                 )}
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="password">{t("passwordLabel")}</Label>
+              <div className="space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="password" className="text-sm font-medium">{t("passwordLabel")}</Label>
+                </div>
                 <Input
                   id="password"
                   type="password"
                   placeholder={t("passwordPlaceholder")}
                   autoComplete="current-password"
+                  className="bg-muted/30 focus-visible:bg-transparent transition-colors"
                   {...register("password")}
                 />
                 {errors.password && (
@@ -113,19 +138,19 @@ export default function LoginPage() {
               </div>
             </CardContent>
 
-            <CardFooter className="flex flex-col gap-4">
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading && <Loader2 className="size-4 animate-spin" />}
+            <CardFooter className="flex flex-col gap-6 pt-2">
+              <Button type="submit" className="w-full shadow-md shadow-primary/20 h-10" disabled={isLoading}>
+                {isLoading && <Loader2 className="size-4 animate-spin mr-2" />}
                 {isLoading ? t("signingIn") : tc("signIn")}
               </Button>
 
               <SocialAuth />
 
-              <p className="text-sm text-muted-foreground text-center">
+              <p className="text-sm text-muted-foreground text-center mt-2">
                 {t("noAccount")}{" "}
                 <Link
                   href="/signup"
-                  className="font-medium text-primary hover:underline underline-offset-4"
+                  className="font-medium text-primary hover:text-primary hover:underline underline-offset-4 transition-all"
                 >
                   {tc("signUp")}
                 </Link>

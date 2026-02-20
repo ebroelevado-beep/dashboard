@@ -1,5 +1,6 @@
 {
   "common": {
+    "goBack": "返回",
     "signIn": "登录",
     "signOut": "退出登录",
     "signUp": "注册",

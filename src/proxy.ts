@@ -8,13 +8,23 @@ const intlMiddleware = createIntlMiddleware(routing);
 const publicPages = ["/", "/login", "/signup"];
 
 export default async function middleware(req: NextRequest) {
-  const isPublicPage = publicPages.some(
-    (page) =>
-      req.nextUrl.pathname === page ||
-      req.nextUrl.pathname.startsWith(`/en${page}`) ||
-      req.nextUrl.pathname.startsWith(`/es${page}`) ||
-      req.nextUrl.pathname.startsWith(`/zh${page}`)
-  );
+  const isPublicPage = publicPages.some((page) => {
+    if (req.nextUrl.pathname === page) return true;
+
+    if (page === "/") {
+      return routing.locales.some(
+        (locale) =>
+          req.nextUrl.pathname === `/${locale}` ||
+          req.nextUrl.pathname === `/${locale}/`
+      );
+    }
+
+    return routing.locales.some(
+      (locale) =>
+        req.nextUrl.pathname === `/${locale}${page}` ||
+        req.nextUrl.pathname.startsWith(`/${locale}${page}/`)
+    );
+  });
 
   // For protected pages, manually check the NextAuth JWT.
   // We completely bypass the NextAuth `auth()` wrapper because it forces infinite
